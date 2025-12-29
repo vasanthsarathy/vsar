@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# UV
+uv.lock
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docs
+docs/_build/
+site/
+
+# JAX
+*.npy
+*.npz
+
+# VSAR-specific
+*.vsar.kb
+*.vsar.basis
+
+# OS
+.DS_Store
+Thumbs.db
