@@ -1,0 +1,80 @@
+site_name: VSAR Documentation
+site_description: VSA-grounded reasoning with approximate joins
+site_author: VSAR Contributors
+site_url: https://vasanthsarathy.github.io/vsar/
+
+repo_name: vasanthsarathy/vsar
+repo_url: https://github.com/vasanthsarathy/vsar
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Architecture: architecture.md
+  - API Reference:
+    - Overview: api/index.md
+    - Kernel: api/kernel.md
+    - Symbols: api/symbols.md
+    - Encoding: api/encoding.md
+    - KB: api/kb.md
+    - Retrieval: api/retrieval.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/vasanthsarathy/vsar
