@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vsar"
-version = "0.1.0"
+version = "0.2.0"
 description = "VSAR: VSA-grounded reasoning with approximate joins"
 readme = "README.md"
 requires-python = ">=3.11"
