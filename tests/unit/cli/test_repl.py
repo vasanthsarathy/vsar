@@ -60,8 +60,8 @@ fact parent(bob, carol).
         """Test loading a non-existent file."""
         result = runner.invoke(app, ["repl"], input="load nonexistent.vsar\nexit\n")
         assert result.exit_code == 0
-        assert "Error" in result.stdout
-        assert "not found" in result.stdout
+        assert "File not found" in result.stdout
+        assert "Current directory" in result.stdout
 
     def test_repl_query_without_load(self, runner):
         """Test querying without loading a file first."""
