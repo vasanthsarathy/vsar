@@ -33,14 +33,28 @@ theme:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - User Guides:
+    - Basic Usage: guides/basic-usage.md
+    - File Formats: guides/file-formats.md
+    - KB Management: guides/kb-management.md
+    - Python API: guides/python-api.md
+  - Reference:
+    - CLI Reference: cli-reference.md
+    - Language Reference: language-reference.md
   - Architecture: architecture.md
   - API Reference:
     - Overview: api/index.md
-    - Kernel: api/kernel.md
-    - Symbols: api/symbols.md
-    - Encoding: api/encoding.md
-    - KB: api/kb.md
-    - Retrieval: api/retrieval.md
+    - Phase 0 (Foundation):
+      - Kernel: api/kernel.md
+      - Symbols: api/symbols.md
+      - Encoding: api/encoding.md
+      - KB: api/kb.md
+      - Retrieval: api/retrieval.md
+    - Phase 1 (Language & CLI):
+      - Language: api/language.md
+      - Semantics: api/semantics.md
+      - Trace: api/trace.md
+      - CLI: api/cli.md
 
 plugins:
   - search

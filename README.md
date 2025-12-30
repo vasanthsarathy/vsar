@@ -17,16 +17,27 @@ VSAR (VSAX Reasoner) is a VSA-grounded reasoning system that provides fast appro
 
 ### Installation
 
+**Option 1: Install from PyPI (recommended for users)**
+
 ```bash
-# Install uv (recommended)
+pip install vsar
+
+# Verify installation
+vsar --help
+```
+
+**Option 2: Development install with uv**
+
+```bash
+# Install uv
 pip install uv
 
 # Clone and install
-git clone https://github.com/your-org/vsar.git
+git clone https://github.com/vasanthsarathy/vsar.git
 cd vsar
 uv sync
 
-# Verify installation
+# For development, use uv run
 uv run vsar --help
 ```
 
@@ -50,6 +61,10 @@ query parent(X, dave)?
 Run it:
 
 ```bash
+# After pip install vsar
+vsar run family.vsar
+
+# Or during development with uv
 uv run vsar run family.vsar
 ```
 
@@ -73,39 +88,39 @@ Inserted 4 facts
 
 ```bash
 # From CSV (predicate in first column)
-uv run vsar ingest facts.csv --kb family.h5
+vsar ingest facts.csv --kb family.h5
 
 # From CSV (all rows same predicate)
-uv run vsar ingest parents.csv --predicate parent --kb family.h5
+vsar ingest parents.csv --predicate parent --kb family.h5
 
 # From JSONL
-uv run vsar ingest facts.jsonl --kb family.h5
+vsar ingest facts.jsonl --kb family.h5
 ```
 
 #### Query and Export
 
 ```bash
 # Export KB to JSON
-uv run vsar export family.h5 --format json --output facts.json
+vsar export family.h5 --format json --output facts.json
 
 # Export to JSONL
-uv run vsar export family.h5 --format jsonl --output facts.jsonl
+vsar export family.h5 --format jsonl --output facts.jsonl
 
 # Inspect KB statistics
-uv run vsar inspect family.h5
+vsar inspect family.h5
 ```
 
 #### Advanced Options
 
 ```bash
 # JSON output for scripting
-uv run vsar run program.vsar --json
+vsar run program.vsar --json
 
 # Show trace DAG
-uv run vsar run program.vsar --trace
+vsar run program.vsar --trace
 
 # Limit results per query
-uv run vsar run program.vsar --k 10
+vsar run program.vsar --k 10
 ```
 
 ## VSARL Language
@@ -341,13 +356,13 @@ query works_at(alice, X)?     // Returns: mit
 
 ```bash
 # Ingest 1M facts from CSV
-uv run vsar ingest large_dataset.csv \\
-  --kb large.h5 \\
-  --dim 8192 \\
+vsar ingest large_dataset.csv \
+  --kb large.h5 \
+  --dim 8192 \
   --seed 42
 
 # Query the KB
-uv run vsar run queries.vsar --kb large.h5 --k 10
+vsar run queries.vsar --k 10
 ```
 
 ## Performance
