@@ -1,0 +1,49 @@
+// VSARL Grammar (Lark EBNF)
+// Specification: VSAR Phase 1 - Facts, Queries, Directives
+
+start: statement*
+
+statement: directive
+         | fact
+         | query
+
+// Directives: @model FHRR(dim=8192, seed=1); or @threshold(value=0.22);
+directive: "@" IDENTIFIER (IDENTIFIER "(" params? ")" | "(" params? ")") ";"
+params: param ("," param)*
+param: IDENTIFIER "=" value
+value: NUMBER | STRING | IDENTIFIER | TRUE | FALSE
+
+// Facts: fact parent(alice, bob).
+fact: "fact" atom "."
+
+// Queries: query parent(alice, X)?
+query: "query" atom "?"
+
+// Atoms: predicate(arg1, arg2, ...)
+atom: predicate "(" args? ")"
+predicate: LOWER_NAME
+args: arg ("," arg)*
+arg: constant | variable
+
+// Constants: lowercase identifiers
+constant: LOWER_NAME
+
+// Variables: UpperCamel identifiers
+variable: UPPER_NAME
+
+// Terminals
+TRUE: "true"
+FALSE: "false"
+IDENTIFIER: /[a-zA-Z][a-zA-Z0-9_]*/
+LOWER_NAME: /[a-z][a-z0-9_]*/
+UPPER_NAME: /[A-Z][A-Za-z0-9_]*/
+NUMBER: /\-?[0-9]+(\.[0-9]+)?/
+STRING: /"[^"]*"/
+
+// Comments and whitespace
+COMMENT_SINGLE: /\/\/[^\n]*/
+COMMENT_MULTI: /\/\*(.|\n)*?\*\//
+
+%ignore COMMENT_SINGLE
+%ignore COMMENT_MULTI
+%ignore /\s+/
