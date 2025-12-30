@@ -8,9 +8,10 @@ Typer-based CLI application.
 
 ### Commands
 
-The VSAR CLI provides four main commands:
+The VSAR CLI provides five main commands:
 
 - `vsar run` - Execute VSAR program
+- `vsar repl` - Start interactive REPL mode
 - `vsar ingest` - Ingest facts from files
 - `vsar export` - Export knowledge base
 - `vsar inspect` - Show KB statistics

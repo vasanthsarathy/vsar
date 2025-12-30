@@ -250,5 +250,134 @@ def inspect(
     console.print(output)
 
 
+@app.command()
+def repl() -> None:
+    """Start interactive REPL mode.
+
+    Load VSAR files and execute queries interactively.
+
+    Example:
+        vsar repl
+        > load family.vsar
+        > query parent(alice, X)?
+        > stats
+        > exit
+    """
+    console.print("[bold cyan]VSAR Interactive REPL[/bold cyan]")
+    console.print("Type 'help' for commands, 'exit' to quit\n")
+
+    engine = None
+    program = None
+
+    while True:
+        try:
+            # Read input
+            user_input = console.input("[bold green]> [/bold green]").strip()
+
+            if not user_input:
+                continue
+
+            # Parse command
+            parts = user_input.split(maxsplit=1)
+            command = parts[0].lower()
+
+            # Handle commands
+            if command in ["exit", "quit"]:
+                console.print("[yellow]Goodbye![/yellow]")
+                break
+
+            elif command == "help":
+                console.print("\n[bold]Available Commands:[/bold]")
+                console.print("  [cyan]load <file>[/cyan]        Load a VSAR program file")
+                console.print("  [cyan]query <query>[/cyan]      Execute a query (e.g., parent(alice, X)?)")
+                console.print("  [cyan]stats[/cyan]              Show knowledge base statistics")
+                console.print("  [cyan]help[/cyan]               Show this help message")
+                console.print("  [cyan]exit[/cyan] or [cyan]quit[/cyan]      Exit REPL\n")
+
+            elif command == "load":
+                if len(parts) < 2:
+                    console.print("[red]Error: Usage: load <file>[/red]")
+                    continue
+
+                file_path = Path(parts[1])
+                try:
+                    program = load_vsar(file_path)
+                    engine = VSAREngine(program.directives)
+
+                    # Insert facts
+                    for fact in program.facts:
+                        engine.insert_fact(fact)
+
+                    console.print(f"[green]Loaded {file_path}[/green]")
+                    console.print(f"[green]Inserted {len(program.facts)} facts[/green]")
+
+                except FileNotFoundError:
+                    console.print(f"[red]Error: File not found: {file_path}[/red]")
+                except Exception as e:
+                    console.print(f"[red]Error loading file: {e}[/red]")
+
+            elif command == "query":
+                if engine is None:
+                    console.print("[red]Error: No program loaded. Use 'load <file>' first[/red]")
+                    continue
+
+                if len(parts) < 2:
+                    console.print("[red]Error: Usage: query <query>[/red]")
+                    console.print("[yellow]Example: query parent(alice, X)?[/yellow]")
+                    continue
+
+                query_text = parts[1].strip()
+
+                # Parse query using the parser
+                try:
+                    from vsar.language.parser import parse
+
+                    # Wrap in a minimal program to parse
+                    program_text = f"@model FHRR(dim=8192, seed=42);\nquery {query_text}"
+                    parsed_program = parse(program_text)
+
+                    if not parsed_program.queries:
+                        console.print("[red]Error: Invalid query syntax[/red]")
+                        continue
+
+                    query = parsed_program.queries[0]
+
+                    # Execute query
+                    result = engine.query(query, k=10)
+
+                    # Display results
+                    if result.results:
+                        output = format_results_table([result])
+                        console.print(output)
+                    else:
+                        console.print("[yellow]No results found[/yellow]")
+
+                except Exception as e:
+                    console.print(f"[red]Error executing query: {e}[/red]")
+
+            elif command == "stats":
+                if engine is None:
+                    console.print("[red]Error: No program loaded. Use 'load <file>' first[/red]")
+                    continue
+
+                stats = engine.stats()
+                output = format_stats(stats)
+                console.print(output)
+
+            else:
+                console.print(f"[red]Unknown command: {command}[/red]")
+                console.print("[yellow]Type 'help' for available commands[/yellow]")
+
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Use 'exit' to quit[/yellow]")
+            continue
+        except EOFError:
+            console.print("\n[yellow]Goodbye![/yellow]")
+            break
+        except Exception as e:
+            console.print(f"[red]Error: {e}[/red]")
+            continue
+
+
 if __name__ == "__main__":
     app()

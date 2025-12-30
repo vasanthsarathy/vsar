@@ -6,12 +6,13 @@ VSAR (VSAX Reasoner) is a VSA-grounded reasoning system that provides fast appro
 
 - **Fast approximate querying**: Query 10^6+ facts with subsymbolic retrieval
 - **VSARL language**: Declarative syntax for facts, queries, and rules
+- **Interactive REPL**: Load files and query interactively
 - **CLI interface**: Simple commands for ingestion, querying, and export
 - **Multiple formats**: Load facts from CSV, JSONL, or VSAR files
 - **Trace layer**: Explanation DAG for debugging and transparency
 - **Deterministic results**: Reproducible outputs with fixed seeds
 - **HDF5 persistence**: Save and load knowledge bases
-- **Comprehensive testing**: 281 tests with 98.5% coverage
+- **Comprehensive testing**: 295 tests with 98.6% coverage
 
 ## Quick Start
 
@@ -80,6 +81,52 @@ Inserted 4 facts
 │ bob    │ 0.9234         │
 │ carol  │ 0.9156         │
 └────────┴────────────────┘
+```
+
+### Interactive REPL
+
+Start an interactive session to load files and query on the fly:
+
+```bash
+vsar repl
+```
+
+Example session:
+
+```
+VSAR Interactive REPL
+Type 'help' for commands, 'exit' to quit
+
+> load family.vsar
+Loaded family.vsar
+Inserted 4 facts
+
+> query parent(alice, X)?
+┌─────────────────────────┐
+│ Query: parent(alice, X) │
+├────────┬────────────────┤
+│ Entity │ Score          │
+├────────┼────────────────┤
+│ bob    │ 0.9234         │
+│ carol  │ 0.9156         │
+└────────┴────────────────┘
+
+> query parent(X, dave)?
+┌───────────────────────┐
+│ Query: parent(X, dave)│
+├────────┬──────────────┤
+│ Entity │ Score        │
+├────────┼──────────────┤
+│ bob    │ 0.8876       │
+└────────┴──────────────┘
+
+> stats
+Knowledge Base Statistics
+Total Facts: 4
+Predicates: parent (4 facts)
+
+> exit
+Goodbye!
 ```
 
 ### CLI Commands

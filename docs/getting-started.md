@@ -96,6 +96,68 @@ Inserted 4 facts
 - `fact parent(alice, bob).` - Declares a ground fact
 - `query parent(alice, X)?` - Queries for all children of alice (X is a variable)
 
+## Interactive REPL Mode
+
+For exploration and experimentation, use the interactive REPL:
+
+```bash
+vsar repl
+```
+
+This starts an interactive session where you can load files and query on the fly:
+
+```
+VSAR Interactive REPL
+Type 'help' for commands, 'exit' to quit
+
+> help
+Available Commands:
+  load <file>        Load a VSAR program file
+  query <query>      Execute a query (e.g., parent(alice, X)?)
+  stats              Show knowledge base statistics
+  help               Show this help message
+  exit or quit       Exit REPL
+
+> load family.vsar
+Loaded family.vsar
+Inserted 4 facts
+
+> query parent(alice, X)?
+┌─────────────────────────┐
+│ Query: parent(alice, X) │
+├────────┬────────────────┤
+│ Entity │ Score          │
+├────────┼────────────────┤
+│ bob    │ 0.9234         │
+│ carol  │ 0.9156         │
+└────────┴────────────────┘
+
+> query parent(bob, X)?
+┌───────────────────────┐
+│ Query: parent(bob, X) │
+├────────┬──────────────┤
+│ Entity │ Score        │
+├────────┼──────────────┤
+│ dave   │ 0.8934       │
+└────────┴──────────────┘
+
+> stats
+Knowledge Base Statistics
+Total Facts: 4
+Predicates:
+  - parent: 4 facts
+
+> exit
+Goodbye!
+```
+
+The REPL is perfect for:
+
+- **Exploring datasets**: Load a file and try different queries interactively
+- **Debugging queries**: Test query syntax and see immediate results
+- **Learning VSAR**: Experiment with the language in a forgiving environment
+- **Quick prototyping**: Try out ideas without writing full programs
+
 ## Working with CSV Files
 
 VSAR can ingest facts from CSV files.

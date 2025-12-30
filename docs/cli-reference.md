@@ -101,6 +101,104 @@ Inserted 4 facts
 
 ---
 
+### `vsar repl`
+
+Start interactive REPL (Read-Eval-Print Loop) mode.
+
+**Usage:**
+
+```bash
+vsar repl
+```
+
+**Description:**
+
+The REPL provides an interactive session for loading VSAR files and executing queries on the fly. Perfect for exploration, debugging, and learning.
+
+**Available Commands:**
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `load <file>` | Load a VSAR program file | `load family.vsar` |
+| `query <query>` | Execute a query | `query parent(alice, X)?` |
+| `stats` | Show KB statistics | `stats` |
+| `help` | Show help message | `help` |
+| `exit` or `quit` | Exit REPL | `exit` |
+
+**Example Session:**
+
+```
+$ vsar repl
+VSAR Interactive REPL
+Type 'help' for commands, 'exit' to quit
+
+> help
+Available Commands:
+  load <file>        Load a VSAR program file
+  query <query>      Execute a query (e.g., parent(alice, X)?)
+  stats              Show knowledge base statistics
+  help               Show this help message
+  exit or quit       Exit REPL
+
+> load family.vsar
+Loaded family.vsar
+Inserted 4 facts
+
+> query parent(alice, X)?
+┌─────────────────────────┐
+│ Query: parent(alice, X) │
+├────────┬────────────────┤
+│ Entity │ Score          │
+├────────┼────────────────┤
+│ bob    │ 0.9234         │
+│ carol  │ 0.9156         │
+└────────┴────────────────┘
+
+> query parent(bob, X)?
+┌───────────────────────┐
+│ Query: parent(bob, X) │
+├────────┬──────────────┤
+│ Entity │ Score        │
+├────────┼──────────────┤
+│ dave   │ 0.8934       │
+└────────┴──────────────┘
+
+> stats
+Knowledge Base Statistics
+┌─────────────┬───────┐
+│ Metric      │ Value │
+├─────────────┼───────┤
+│ Total Facts │ 4     │
+│ Predicates  │ 1     │
+└─────────────┴───────┘
+
+Predicate Details
+┌───────────┬────────────┐
+│ Predicate │ Fact Count │
+├───────────┼────────────┤
+│ parent    │ 4          │
+└───────────┴────────────┘
+
+> exit
+Goodbye!
+```
+
+**Use Cases:**
+
+- **Exploration**: Load a dataset and try different queries interactively
+- **Debugging**: Test query syntax and see immediate feedback
+- **Learning**: Experiment with VSAR language in a forgiving environment
+- **Prototyping**: Quickly test ideas without writing full programs
+
+**Tips:**
+
+- Use Tab completion (if available in your terminal) for file paths
+- Press Ctrl+C to cancel current input (doesn't exit REPL)
+- Press Ctrl+D or type `exit`/`quit` to exit
+- Query syntax is the same as in .vsar files
+
+---
+
 ### `vsar ingest`
 
 Ingest facts from CSV or JSONL files into a knowledge base.
