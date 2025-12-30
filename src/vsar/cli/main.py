@@ -50,8 +50,8 @@ def run(
     # Load program
     try:
         program = load_vsar(program_path)
-    except FileNotFoundError:
-        console.print(f"[red]Error: File not found: {program_path}[/red]")
+    except FileNotFoundError as e:
+        console.print(f"[red]{e}[/red]")
         raise typer.Exit(code=1)
     except Exception as e:
         console.print(f"[red]Error parsing program: {e}[/red]")
@@ -311,8 +311,8 @@ def repl() -> None:
                     console.print(f"[green]Loaded {file_path}[/green]")
                     console.print(f"[green]Inserted {len(program.facts)} facts[/green]")
 
-                except FileNotFoundError:
-                    console.print(f"[red]Error: File not found: {file_path}[/red]")
+                except FileNotFoundError as e:
+                    console.print(f"[red]{e}[/red]")
                 except Exception as e:
                     console.print(f"[red]Error loading file: {e}[/red]")
 
