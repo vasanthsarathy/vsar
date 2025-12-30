@@ -254,6 +254,36 @@ print(result.trace)
 - Semantic versioning: `MAJOR.MINOR.PATCH`
 - Language versioning tracked independently (e.g., `@lang 0.1`)
 
+### Release & Publishing Workflow
+
+To publish a new version to PyPI:
+
+```bash
+# 1. Bump version (updates pyproject.toml and src/vsar/version.py)
+./scripts/bump_version.sh 0.2.0
+
+# 2. Commit version bump
+git add -A && git commit -m "Bump version to 0.2.0"
+
+# 3. Tag the release
+git tag v0.2.0
+
+# 4. Push with tags (triggers GitHub Actions CI/CD)
+git push origin main --tags
+```
+
+**What happens automatically:**
+- GitHub Actions runs all tests
+- Builds distribution packages (wheel + sdist)
+- Publishes to PyPI
+- Creates GitHub Release with changelog
+
+**For future releases:**
+- Use semantic versioning
+- Major: Breaking changes (e.g., 1.0.0)
+- Minor: New features (e.g., 0.2.0)
+- Patch: Bug fixes (e.g., 0.1.1)
+
 ## UI/UX Design
 
 ### Visual Language
