@@ -175,9 +175,16 @@ class Parser:
             FileNotFoundError: If file doesn't exist
             ValueError: If parsing fails
         """
-        path = Path(path)
+        path = Path(path).resolve()  # Resolve to absolute path
         if not path.exists():
-            raise FileNotFoundError(f"File not found: {path}")
+            # Provide detailed error with absolute path
+            import os
+            cwd = os.getcwd()
+            raise FileNotFoundError(
+                f"File not found: {path}\n"
+                f"Current directory: {cwd}\n"
+                f"Please check the file exists and path is correct."
+            )
 
         with open(path, "r", encoding="utf-8") as f:
             text = f.read()
