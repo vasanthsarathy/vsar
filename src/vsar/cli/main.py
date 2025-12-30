@@ -27,15 +27,9 @@ console = Console()
 @app.command()
 def run(
     program_path: Annotated[Path, typer.Argument(help="Path to .vsar program file")],
-    json_output: Annotated[
-        bool, typer.Option("--json", help="Output results as JSON")
-    ] = False,
-    show_trace: Annotated[
-        bool, typer.Option("--trace", help="Show trace DAG")
-    ] = False,
-    k: Annotated[
-        Optional[int], typer.Option("--k", help="Number of results per query")
-    ] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="Output results as JSON")] = False,
+    show_trace: Annotated[bool, typer.Option("--trace", help="Show trace DAG")] = False,
+    k: Annotated[Optional[int], typer.Option("--k", help="Number of results per query")] = None,
 ) -> None:
     """Execute a VSAR program.
 
@@ -113,9 +107,7 @@ def ingest(
         str,
         typer.Option("--format", "-f", help="Format: auto, csv, jsonl, vsar"),
     ] = "auto",
-    model_dim: Annotated[
-        int, typer.Option("--dim", help="Model dimension")
-    ] = 8192,
+    model_dim: Annotated[int, typer.Option("--dim", help="Model dimension")] = 8192,
     seed: Annotated[int, typer.Option("--seed", help="Random seed")] = 42,
 ) -> None:
     """Ingest facts from CSV, JSONL, or VSAR file.
@@ -140,9 +132,7 @@ def ingest(
     # Create engine with default config
     from vsar.language.ast import Directive
 
-    directives = [
-        Directive(name="model", params={"type": "FHRR", "dim": model_dim, "seed": seed})
-    ]
+    directives = [Directive(name="model", params={"type": "FHRR", "dim": model_dim, "seed": seed})]
     engine = VSAREngine(directives)
 
     # Insert facts
@@ -183,9 +173,7 @@ def export(
     # Create engine and load KB
     from vsar.language.ast import Directive
 
-    directives = [
-        Directive(name="model", params={"type": "FHRR", "dim": 8192, "seed": 42})
-    ]
+    directives = [Directive(name="model", params={"type": "FHRR", "dim": 8192, "seed": 42})]
     engine = VSAREngine(directives)
 
     try:
@@ -214,9 +202,7 @@ def export(
 
 @app.command()
 def inspect(
-    kb_path: Annotated[
-        Optional[Path], typer.Argument(help="Path to knowledge base (HDF5)")
-    ] = None,
+    kb_path: Annotated[Optional[Path], typer.Argument(help="Path to knowledge base (HDF5)")] = None,
 ) -> None:
     """Inspect knowledge base statistics.
 
@@ -230,9 +216,7 @@ def inspect(
     # Create engine and load KB
     from vsar.language.ast import Directive
 
-    directives = [
-        Directive(name="model", params={"type": "FHRR", "dim": 8192, "seed": 42})
-    ]
+    directives = [Directive(name="model", params={"type": "FHRR", "dim": 8192, "seed": 42})]
     engine = VSAREngine(directives)
 
     try:
@@ -289,7 +273,9 @@ def repl() -> None:
             elif command == "help":
                 console.print("\n[bold]Available Commands:[/bold]")
                 console.print("  [cyan]load <file>[/cyan]        Load a VSAR program file")
-                console.print("  [cyan]query <query>[/cyan]      Execute a query (e.g., parent(alice, X)?)")
+                console.print(
+                    "  [cyan]query <query>[/cyan]      Execute a query (e.g., parent(alice, X)?)"
+                )
                 console.print("  [cyan]stats[/cyan]              Show knowledge base statistics")
                 console.print("  [cyan]help[/cyan]               Show this help message")
                 console.print("  [cyan]exit[/cyan] or [cyan]quit[/cyan]      Exit REPL\n")

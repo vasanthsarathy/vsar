@@ -32,9 +32,7 @@ class Query(BaseModel):
     """Query with variables: query parent(alice, X)?"""
 
     predicate: str = Field(..., description="Predicate name (lowercase)")
-    args: list[str | None] = Field(
-        ..., description="Arguments (None = variable, str = constant)"
-    )
+    args: list[str | None] = Field(..., description="Arguments (None = variable, str = constant)")
 
     def __repr__(self) -> str:
         args_str = ", ".join(str(arg) if arg is not None else "?" for arg in self.args)

@@ -1,4 +1,5 @@
 """Unit tests for knowledge base persistence."""
+
 import jax
 
 from pathlib import Path
@@ -25,15 +26,9 @@ class TestKBPersistence:
         kb = KnowledgeBase(backend)
 
         # Add some facts
-        vec1 = backend.generate_random(
-            jax.random.PRNGKey(0), (backend.dimension,)
-        )
-        vec2 = backend.generate_random(
-            jax.random.PRNGKey(0), (backend.dimension,)
-        )
-        vec3 = backend.generate_random(
-            jax.random.PRNGKey(0), (backend.dimension,)
-        )
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec3 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
         kb.insert("parent", vec2, ("bob", "carol"))
@@ -46,9 +41,7 @@ class TestKBPersistence:
         """Create temporary file path."""
         return tmp_path / "test_kb.h5"
 
-    def test_save_creates_file(
-        self, kb_with_facts: KnowledgeBase, temp_file: Path
-    ) -> None:
+    def test_save_creates_file(self, kb_with_facts: KnowledgeBase, temp_file: Path) -> None:
         """Test that save creates the file."""
         assert not temp_file.exists()
         save_kb(kb_with_facts, temp_file)
@@ -105,18 +98,22 @@ class TestKBPersistence:
         save_kb(kb_with_facts, temp_file)
         loaded_kb = load_kb(backend, temp_file)
 
-        # Verify bundles
-        original_parent_bundle = kb_with_facts.get_bundle("parent")
-        loaded_parent_bundle = loaded_kb.get_bundle("parent")
-        assert original_parent_bundle is not None
-        assert loaded_parent_bundle is not None
-        assert jnp.allclose(loaded_parent_bundle, original_parent_bundle)
+        # Verify vectors
+        original_parent_vectors = kb_with_facts.get_vectors("parent")
+        loaded_parent_vectors = loaded_kb.get_vectors("parent")
+        assert len(original_parent_vectors) > 0
+        assert len(loaded_parent_vectors) > 0
+        assert len(original_parent_vectors) == len(loaded_parent_vectors)
+        for orig, loaded in zip(original_parent_vectors, loaded_parent_vectors):
+            assert jnp.allclose(loaded, orig)
 
-        original_sibling_bundle = kb_with_facts.get_bundle("sibling")
-        loaded_sibling_bundle = loaded_kb.get_bundle("sibling")
-        assert original_sibling_bundle is not None
-        assert loaded_sibling_bundle is not None
-        assert jnp.allclose(loaded_sibling_bundle, original_sibling_bundle)
+        original_sibling_vectors = kb_with_facts.get_vectors("sibling")
+        loaded_sibling_vectors = loaded_kb.get_vectors("sibling")
+        assert len(original_sibling_vectors) > 0
+        assert len(loaded_sibling_vectors) > 0
+        assert len(original_sibling_vectors) == len(loaded_sibling_vectors)
+        for orig, loaded in zip(original_sibling_vectors, loaded_sibling_vectors):
+            assert jnp.allclose(loaded, orig)
 
     def test_save_empty_kb(self, backend: FHRRBackend, temp_file: Path) -> None:
         """Test saving empty KB."""
@@ -127,9 +124,7 @@ class TestKBPersistence:
         assert loaded_kb.count() == 0
         assert loaded_kb.predicates() == []
 
-    def test_load_nonexistent_file_raises_error(
-        self, backend: FHRRBackend, tmp_path: Path
-    ) -> None:
+    def test_load_nonexistent_file_raises_error(self, backend: FHRRBackend, tmp_path: Path) -> None:
         """Test that loading nonexistent file raises FileNotFoundError."""
         with pytest.raises(FileNotFoundError):
             load_kb(backend, tmp_path / "nonexistent.h5")
@@ -143,9 +138,7 @@ class TestKBPersistence:
 
         # Create new KB with different facts
         new_kb = KnowledgeBase(backend)
-        vec = backend.generate_random(
-            jax.random.PRNGKey(0), (backend.dimension,)
-        )
+        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
         new_kb.insert("human", vec, ("alice",))
 
         # Overwrite
@@ -179,9 +172,7 @@ class TestKBPersistence:
 
         # Insert facts in specific order
         for i in range(5):
-            vec = backend.generate_random(
-                jax.random.PRNGKey(0), (backend.dimension,)
-            )
+            vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
             kb.insert("test", vec, (f"entity_{i}",))
 
         save_kb(kb, temp_file)
@@ -192,17 +183,13 @@ class TestKBPersistence:
         loaded_facts = loaded_kb.get_facts("test")
         assert loaded_facts == original_facts
 
-    def test_save_multiple_predicates(
-        self, backend: FHRRBackend, temp_file: Path
-    ) -> None:
+    def test_save_multiple_predicates(self, backend: FHRRBackend, temp_file: Path) -> None:
         """Test saving KB with many predicates."""
         kb = KnowledgeBase(backend)
 
         # Add facts for multiple predicates
         for i in range(10):
-            vec = backend.generate_random(
-                jax.random.PRNGKey(0), (backend.dimension,)
-            )
+            vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
             kb.insert(f"predicate_{i}", vec, (f"arg_{i}",))
 
         save_kb(kb, temp_file)

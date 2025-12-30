@@ -27,9 +27,7 @@ class TestPersistence:
         """Create temporary basis file path."""
         return tmp_path / "test_basis.h5"
 
-    def test_save_load_kb_with_retrieval(
-        self, temp_kb_file: Path
-    ) -> None:
+    def test_save_load_kb_with_retrieval(self, temp_kb_file: Path) -> None:
         """Test save/load KB preserves retrieval functionality."""
         # Session 1: Create KB and insert facts
         backend1 = FHRRBackend(dim=512, seed=42)
@@ -64,9 +62,7 @@ class TestPersistence:
         kb2 = load_kb(backend2, temp_kb_file)
 
         # Create retriever
-        retriever2 = Retriever(
-            backend2, registry2, kb2, encoder2, role_manager2
-        )
+        retriever2 = Retriever(backend2, registry2, kb2, encoder2)
 
         # Query: parent(alice, X)
         results = retriever2.retrieve("parent", 2, {"1": "alice"}, k=5)
@@ -76,9 +72,7 @@ class TestPersistence:
         entity_names = [name for name, _ in results]
         assert "bob" in entity_names or "carol" in entity_names
 
-    def test_save_load_basis_preserves_symbols(
-        self, temp_basis_file: Path
-    ) -> None:
+    def test_save_load_basis_preserves_symbols(self, temp_basis_file: Path) -> None:
         """Test save/load basis preserves symbol vectors."""
         # Session 1: Create registry and save basis
         backend1 = FHRRBackend(dim=512, seed=42)
@@ -113,9 +107,7 @@ class TestPersistence:
 
         assert jnp.allclose(alice1, alice2)
 
-    def test_complete_save_load_workflow(
-        self, temp_kb_file: Path, temp_basis_file: Path
-    ) -> None:
+    def test_complete_save_load_workflow(self, temp_kb_file: Path, temp_basis_file: Path) -> None:
         """Test complete save/load workflow: basis + KB."""
         # Session 1: Build and save system
         backend1 = FHRRBackend(dim=512, seed=42)
@@ -153,9 +145,7 @@ class TestPersistence:
         kb2 = load_kb(backend2, temp_kb_file)
 
         # Create retriever
-        retriever2 = Retriever(
-            backend2, registry2, kb2, encoder2, role_manager2
-        )
+        retriever2 = Retriever(backend2, registry2, kb2, encoder2)
 
         # Test both queries
         results1 = retriever2.retrieve("parent", 2, {"1": "alice"}, k=5)
@@ -169,9 +159,7 @@ class TestPersistence:
         assert "bob" in [name for name, _ in results1]
         assert "bob" in [name for name, _ in results2]
 
-    def test_incremental_updates_after_load(
-        self, temp_kb_file: Path
-    ) -> None:
+    def test_incremental_updates_after_load(self, temp_kb_file: Path) -> None:
         """Test that KB can be updated after loading."""
         # Session 1: Create and save KB
         backend1 = FHRRBackend(dim=512, seed=42)
@@ -202,9 +190,7 @@ class TestPersistence:
         kb2.insert("parent", atom_vec2, ("alice", "carol"))
 
         # Verify both facts are retrievable
-        retriever2 = Retriever(
-            backend2, registry2, kb2, encoder2, role_manager2
-        )
+        retriever2 = Retriever(backend2, registry2, kb2, encoder2)
 
         results = retriever2.retrieve("parent", 2, {"1": "alice"}, k=5)
 
@@ -214,9 +200,7 @@ class TestPersistence:
         # Both bob and carol should be retrievable
         assert "bob" in entity_names or "carol" in entity_names
 
-    def test_multiple_save_load_cycles(
-        self, temp_kb_file: Path
-    ) -> None:
+    def test_multiple_save_load_cycles(self, temp_kb_file: Path) -> None:
         """Test multiple save/load cycles preserve data."""
         backend = FHRRBackend(dim=512, seed=42)
         registry = SymbolRegistry(backend, seed=42)

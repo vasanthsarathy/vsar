@@ -28,17 +28,14 @@ class TestVSAFlow:
         # Create KB
         kb = KnowledgeBase(backend)
 
-        # Create role manager
-        role_manager = RoleVectorManager(backend, seed=42)
-
         # Create retriever
-        retriever = Retriever(backend, registry, kb, encoder, role_manager)
+        retriever = Retriever(backend, registry, kb, encoder)
 
-        return backend, registry, encoder, kb, role_manager, retriever
+        return backend, registry, encoder, kb, retriever
 
     def test_simple_parent_query(self, setup_system: tuple) -> None:
         """Test simple parent query: parent(alice, X)."""
-        backend, registry, encoder, kb, role_manager, retriever = setup_system
+        backend, registry, encoder, kb, retriever = setup_system
 
         # Insert facts
         facts = [
@@ -66,7 +63,7 @@ class TestVSAFlow:
 
     def test_reverse_parent_query(self, setup_system: tuple) -> None:
         """Test reverse query: parent(X, carol)."""
-        backend, registry, encoder, kb, role_manager, retriever = setup_system
+        backend, registry, encoder, kb, retriever = setup_system
 
         # Insert facts
         facts = [
@@ -88,7 +85,7 @@ class TestVSAFlow:
 
     def test_grandparent_chain(self, setup_system: tuple) -> None:
         """Test grandparent relationships through chained queries."""
-        backend, registry, encoder, kb, role_manager, retriever = setup_system
+        backend, registry, encoder, kb, retriever = setup_system
 
         # Insert facts
         parent_facts = [
@@ -116,7 +113,7 @@ class TestVSAFlow:
 
     def test_multiple_predicates(self, setup_system: tuple) -> None:
         """Test system with multiple predicates."""
-        backend, registry, encoder, kb, role_manager, retriever = setup_system
+        backend, registry, encoder, kb, retriever = setup_system
 
         # Insert parent facts
         parent_facts = [
@@ -150,7 +147,7 @@ class TestVSAFlow:
 
     def test_ternary_predicate(self, setup_system: tuple) -> None:
         """Test ternary predicate: gave(alice, bob, book)."""
-        backend, registry, encoder, kb, role_manager, retriever = setup_system
+        backend, registry, encoder, kb, retriever = setup_system
 
         # Insert facts
         facts = [
@@ -172,7 +169,7 @@ class TestVSAFlow:
 
     def test_high_noise_scenario(self, setup_system: tuple) -> None:
         """Test retrieval with many facts (high noise)."""
-        backend, registry, encoder, kb, role_manager, retriever = setup_system
+        backend, registry, encoder, kb, retriever = setup_system
 
         # Insert many facts
         facts = [
@@ -201,7 +198,7 @@ class TestVSAFlow:
 
     def test_empty_kb_query(self, setup_system: tuple) -> None:
         """Test querying empty KB raises appropriate error."""
-        backend, registry, encoder, kb, role_manager, retriever = setup_system
+        backend, registry, encoder, kb, retriever = setup_system
 
         # Query without any facts
         with pytest.raises(ValueError, match="not found in KB"):
@@ -209,7 +206,7 @@ class TestVSAFlow:
 
     def test_retrieve_all_variables(self, setup_system: tuple) -> None:
         """Test retrieving all unbound variables."""
-        backend, registry, encoder, kb, role_manager, retriever = setup_system
+        backend, registry, encoder, kb, retriever = setup_system
 
         # Insert facts
         facts = [
@@ -237,7 +234,7 @@ class TestVSAFlow:
 
     def test_deterministic_retrieval(self, setup_system: tuple) -> None:
         """Test that retrieval is deterministic."""
-        backend, registry, encoder, kb, role_manager, retriever = setup_system
+        backend, registry, encoder, kb, retriever = setup_system
 
         # Insert facts
         facts = [

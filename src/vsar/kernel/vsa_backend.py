@@ -76,9 +76,7 @@ class FHRRBackend(KernelBackend):
         result = self._model.opset.bind(bound, factor_inv)
         return self.normalize(result)
 
-    def bundle(
-        self, vectors: list[jnp.ndarray] | jnp.ndarray, axis: int = 0
-    ) -> jnp.ndarray:
+    def bundle(self, vectors: list[jnp.ndarray] | jnp.ndarray, axis: int = 0) -> jnp.ndarray:
         """
         Bundle multiple hypervectors via element-wise sum and normalization.
 
@@ -113,9 +111,7 @@ class FHRRBackend(KernelBackend):
         # Normalize to [0, 1] range (cosine is in [-1, 1])
         return float((sim + 1.0) / 2.0)
 
-    def generate_random(
-        self, key: jax.random.PRNGKey, shape: tuple[int, ...]
-    ) -> jnp.ndarray:
+    def generate_random(self, key: jax.random.PRNGKey, shape: tuple[int, ...]) -> jnp.ndarray:
         """
         Generate random hypervector using VSAX's sampling function.
 
@@ -151,6 +147,27 @@ class FHRRBackend(KernelBackend):
         # For complex hypervectors, normalize to unit magnitude
         norm = jnp.linalg.norm(vec)
         return vec / (norm + 1e-10)  # Add epsilon to avoid division by zero
+
+    def permute(self, vec: jnp.ndarray, shift: int) -> jnp.ndarray:
+        """
+        Circular shift/permutation of a hypervector.
+
+        This operation is perfectly invertible: permute(permute(v, n), -n) == v
+
+        Args:
+            vec: Hypervector to shift
+            shift: Number of positions to shift (positive or negative)
+
+        Returns:
+            Shifted hypervector
+
+        Example:
+            >>> vec = backend.generate_random(key, (512,))
+            >>> shifted = backend.permute(vec, 5)
+            >>> recovered = backend.permute(shifted, -5)
+            >>> similarity(vec, recovered)  # Should be 1.0
+        """
+        return self._model.opset.permute(vec, shift)
 
 
 class MAPBackend(KernelBackend):
@@ -210,9 +227,7 @@ class MAPBackend(KernelBackend):
         result = self._model.opset.bind(bound, factor_inv)
         return self.normalize(result)
 
-    def bundle(
-        self, vectors: list[jnp.ndarray] | jnp.ndarray, axis: int = 0
-    ) -> jnp.ndarray:
+    def bundle(self, vectors: list[jnp.ndarray] | jnp.ndarray, axis: int = 0) -> jnp.ndarray:
         """
         Bundle multiple hypervectors via element-wise sum and normalization.
 
@@ -245,9 +260,7 @@ class MAPBackend(KernelBackend):
         sim = cosine_similarity(a, b)
         return float((sim + 1.0) / 2.0)
 
-    def generate_random(
-        self, key: jax.random.PRNGKey, shape: tuple[int, ...]
-    ) -> jnp.ndarray:
+    def generate_random(self, key: jax.random.PRNGKey, shape: tuple[int, ...]) -> jnp.ndarray:
         """
         Generate random hypervector using VSAX's sampling function.
 
@@ -280,3 +293,24 @@ class MAPBackend(KernelBackend):
         """
         norm = jnp.linalg.norm(vec)
         return vec / (norm + 1e-10)
+
+    def permute(self, vec: jnp.ndarray, shift: int) -> jnp.ndarray:
+        """
+        Circular shift/permutation of a hypervector.
+
+        This operation is perfectly invertible: permute(permute(v, n), -n) == v
+
+        Args:
+            vec: Hypervector to shift
+            shift: Number of positions to shift (positive or negative)
+
+        Returns:
+            Shifted hypervector
+
+        Example:
+            >>> vec = backend.generate_random(key, (512,))
+            >>> shifted = backend.permute(vec, 5)
+            >>> recovered = backend.permute(shifted, -5)
+            >>> similarity(vec, recovered)  # Should be 1.0
+        """
+        return self._model.opset.permute(vec, shift)

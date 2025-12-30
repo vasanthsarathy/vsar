@@ -27,7 +27,7 @@ dependencies = [
     "numpy>=2.4.0",
     "pydantic>=2.12.5",
     "typer>=0.21.0",
-    "vsax>=1.2.1",
+    "vsax>=1.3.0",
 ]
 
 [project.optional-dependencies]

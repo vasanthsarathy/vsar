@@ -14,10 +14,10 @@ def save_kb(kb: KnowledgeBase, path: Path | str) -> None:
     """
     Save knowledge base to HDF5 file.
 
-    Saves both predicate bundles (hypervectors) and fact lists.
+    Saves both fact vectors (hypervectors) and fact tuples separately.
 
     File structure:
-    - /bundles/<predicate> - bundled hypervector datasets
+    - /vectors/<predicate>/<index> - individual fact vector datasets
     - /facts/<predicate> - JSON-encoded fact lists (attributes)
 
     Args:
@@ -32,15 +32,17 @@ def save_kb(kb: KnowledgeBase, path: Path | str) -> None:
 
     with h5py.File(path, "w") as f:
         # Create groups
-        bundles_group = f.create_group("bundles")
+        vectors_group = f.create_group("vectors")
         facts_group = f.create_group("facts")
 
-        # Save each predicate's bundle and facts
+        # Save each predicate's vectors and facts
         for predicate in kb.predicates():
-            # Save bundle as dataset
-            bundle = kb.get_bundle(predicate)
-            if bundle is not None:
-                bundles_group.create_dataset(predicate, data=bundle)
+            # Save vectors as separate datasets in predicate subgroup
+            vectors = kb.get_vectors(predicate)
+            if vectors:
+                pred_group = vectors_group.create_group(predicate)
+                for i, vec in enumerate(vectors):
+                    pred_group.create_dataset(str(i), data=vec)
 
             # Save facts as JSON attribute
             facts = kb.get_facts(predicate)
@@ -74,20 +76,24 @@ def load_kb(backend: KernelBackend, path: Path | str) -> KnowledgeBase:
     kb = KnowledgeBase(backend)
 
     with h5py.File(path, "r") as f:
-        bundles_group = f["bundles"]
+        vectors_group = f["vectors"]
         facts_group = f["facts"]
 
         # Load each predicate
-        for predicate in bundles_group.keys():
-            # Load bundle
-            bundle = jnp.array(bundles_group[predicate][:])
+        for predicate in vectors_group.keys():
+            # Load vectors from predicate subgroup
+            pred_group = vectors_group[predicate]
+            vectors = []
+            for i in range(len(pred_group.keys())):
+                vec = jnp.array(pred_group[str(i)][:])
+                vectors.append(vec)
 
             # Load facts
             facts_json = facts_group.attrs[predicate]
             facts = json.loads(facts_json)
 
             # Reconstruct KB state
-            kb._bundles[predicate] = bundle
+            kb._vectors[predicate] = vectors
             kb._facts[predicate] = [tuple(fact) for fact in facts]
 
     return kb

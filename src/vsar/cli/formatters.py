@@ -62,17 +62,16 @@ def format_results_json(results: list[QueryResult]) -> str:
     """
     data = []
     for result in results:
-        data.append({
-            "query": {
-                "predicate": result.query.predicate,
-                "args": result.query.args,
-            },
-            "results": [
-                {"entity": entity, "score": score}
-                for entity, score in result.results
-            ],
-            "trace_id": result.trace_id,
-        })
+        data.append(
+            {
+                "query": {
+                    "predicate": result.query.predicate,
+                    "args": result.query.args,
+                },
+                "results": [{"entity": entity, "score": score} for entity, score in result.results],
+                "trace_id": result.trace_id,
+            }
+        )
 
     return json.dumps(data, indent=2)
 
@@ -175,10 +174,7 @@ def _format_query(query: Any) -> str:
     Returns:
         Formatted query string
     """
-    args_str = ", ".join(
-        arg if arg is not None else "X"
-        for arg in query.args
-    )
+    args_str = ", ".join(arg if arg is not None else "X" for arg in query.args)
     return f"{query.predicate}({args_str})"
 
 

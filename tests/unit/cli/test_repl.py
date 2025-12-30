@@ -20,12 +20,14 @@ class TestREPL:
     def family_vsar(self, tmp_path: Path):
         """Create a test VSAR file."""
         vsar_file = tmp_path / "family.vsar"
-        vsar_file.write_text("""
+        vsar_file.write_text(
+            """
 @model FHRR(dim=512, seed=42);
 
 fact parent(alice, bob).
 fact parent(bob, carol).
-""")
+"""
+        )
         return vsar_file
 
     def test_repl_help_command(self, runner):

@@ -1,9 +1,8 @@
-"""VSA encoder using role-filler binding."""
+"""VSA encoder using shift-based positional encoding."""
 
 import jax.numpy as jnp
 
 from vsar.encoding.base import AtomEncoder
-from vsar.encoding.roles import RoleVectorManager
 from vsar.kernel.base import KernelBackend
 from vsar.symbols.registry import SymbolRegistry
 from vsar.symbols.spaces import SymbolSpace
@@ -11,22 +10,26 @@ from vsar.symbols.spaces import SymbolSpace
 
 class VSAEncoder(AtomEncoder):
     """
-    VSA encoder using role-filler binding.
+    VSA encoder using shift-based positional encoding.
 
-    Encodes atoms using the formula:
-        enc(p(t1,...,tk)) = hv(p) ⊗ ((hv(ρ1) ⊗ hv(t1)) ⊕ ... ⊕ (hv(ρk) ⊗ hv(tk)))
+    Encodes atoms using circular shifts for position encoding:
+        enc(p(t1,...,tk)) = shift(hv(t1), 1) ⊕ shift(hv(t2), 2) ⊕ ... ⊕ shift(hv(tk), k)
 
     Where:
-    - hv(p) is the predicate hypervector from RELATIONS space
     - hv(ti) is the entity hypervector from ENTITIES space
-    - hv(ρi) is the role vector for position i
-    - ⊗ is the bind operation (circular convolution for FHRR)
+    - shift(vec, n) is circular permutation by n positions
     - ⊕ is the bundle operation (element-wise sum + normalization)
+
+    Note: Predicate is NOT encoded in the vector - relies on predicate partitioning
+    in the KB for separation.
+
+    This approach avoids bind/unbind operations which are broken in vsax's FHRR
+    implementation. Shift encoding is perfectly invertible: shift(shift(v,n),-n) = v.
 
     Args:
         backend: Kernel backend for hypervector operations
         registry: Symbol registry for looking up hypervectors
-        seed: Random seed for deterministic role vector generation
+        seed: Random seed (unused, kept for API compatibility)
 
     Example:
         >>> from vsar.kernel.vsa_backend import FHRRBackend
@@ -36,7 +39,6 @@ class VSAEncoder(AtomEncoder):
         >>> encoder = VSAEncoder(backend, registry, seed=42)
         >>>
         >>> # Register symbols
-        >>> registry.register(SymbolSpace.RELATIONS, "parent")
         >>> registry.register(SymbolSpace.ENTITIES, "alice")
         >>> registry.register(SymbolSpace.ENTITIES, "bob")
         >>>
@@ -47,20 +49,18 @@ class VSAEncoder(AtomEncoder):
         >>> query_vec = encoder.encode_query("parent", ["alice", None])
     """
 
-    def __init__(
-        self, backend: KernelBackend, registry: SymbolRegistry, seed: int = 42
-    ):
+    def __init__(self, backend: KernelBackend, registry: SymbolRegistry, seed: int = 42):
         super().__init__(backend, registry, seed)
-        self.role_manager = RoleVectorManager(backend, seed)
 
     def encode_atom(self, predicate: str, args: list[str]) -> jnp.ndarray:
         """
         Encode a ground atom into a hypervector.
 
-        Uses role-filler binding to encode the predicate and its arguments.
+        Uses shift-based positional encoding where each argument is shifted
+        by its position index.
 
         Args:
-            predicate: Predicate name (e.g., "parent")
+            predicate: Predicate name (e.g., "parent") - not encoded in vector
             args: List of entity names (e.g., ["alice", "bob"])
 
         Returns:
@@ -77,44 +77,35 @@ class VSAEncoder(AtomEncoder):
         if not args:
             raise ValueError("Arguments list cannot be empty")
 
-        # Get predicate hypervector from RELATIONS space
-        pred_vec = self.registry.register(SymbolSpace.RELATIONS, predicate)
-
-        # Encode each argument with its role
-        role_filler_pairs = []
+        # Encode each argument with shift by position
+        shifted_args = []
         for i, arg in enumerate(args):
             position = i + 1  # 1-indexed positions
-            role_vec = self.role_manager.get_role(position)
             entity_vec = self.registry.register(SymbolSpace.ENTITIES, arg)
 
-            # Bind role to filler: ρi ⊗ ti
-            role_filler = self.backend.bind(role_vec, entity_vec)
-            role_filler_pairs.append(role_filler)
+            # Shift entity by position: shift(entity, position)
+            shifted = self.backend.permute(entity_vec, position)
+            shifted_args.append(shifted)
 
-        # Bundle all role-filler pairs: (ρ1 ⊗ t1) ⊕ (ρ2 ⊗ t2) ⊕ ...
-        bundled = self.backend.bundle(role_filler_pairs)
-
-        # Bind predicate to the bundle: hv(p) ⊗ bundle
-        atom_vec = self.backend.bind(pred_vec, bundled)
+        # Bundle all shifted arguments: shift(t1,1) ⊕ shift(t2,2) ⊕ ...
+        atom_vec = self.backend.bundle(shifted_args)
 
         return self.backend.normalize(atom_vec)
 
-    def encode_query(
-        self, predicate: str, args: list[str | None]
-    ) -> jnp.ndarray:
+    def encode_query(self, predicate: str, args: list[str | None]) -> jnp.ndarray:
         """
         Encode a query pattern into a hypervector.
 
         Query patterns have variables represented as None. Only bound
-        arguments are included in the encoding.
+        arguments are included in the encoding using shift-based encoding.
 
         Args:
-            predicate: Predicate name (e.g., "parent")
+            predicate: Predicate name (e.g., "parent") - not encoded in vector
             args: List of entity names or None for variables
                   (e.g., ["alice", None] for parent(alice, X))
 
         Returns:
-            Hypervector encoding of the query pattern
+            Hypervector encoding of the query pattern (shifted bound args only)
 
         Raises:
             ValueError: If args list is empty
@@ -133,25 +124,18 @@ class VSAEncoder(AtomEncoder):
         if all(arg is None for arg in args):
             raise ValueError("At least one argument must be bound (not None)")
 
-        # Get predicate hypervector from RELATIONS space
-        pred_vec = self.registry.register(SymbolSpace.RELATIONS, predicate)
-
-        # Encode only bound arguments with their roles
-        role_filler_pairs = []
+        # Encode only bound arguments with shift by position
+        shifted_args = []
         for i, arg in enumerate(args):
             if arg is not None:  # Skip variables
                 position = i + 1  # 1-indexed positions
-                role_vec = self.role_manager.get_role(position)
                 entity_vec = self.registry.register(SymbolSpace.ENTITIES, arg)
 
-                # Bind role to filler: ρi ⊗ ti
-                role_filler = self.backend.bind(role_vec, entity_vec)
-                role_filler_pairs.append(role_filler)
+                # Shift entity by position: shift(entity, position)
+                shifted = self.backend.permute(entity_vec, position)
+                shifted_args.append(shifted)
 
-        # Bundle all role-filler pairs
-        bundled = self.backend.bundle(role_filler_pairs)
-
-        # Bind predicate to the bundle
-        query_vec = self.backend.bind(pred_vec, bundled)
+        # Bundle all shifted arguments
+        query_vec = self.backend.bundle(shifted_args)
 
         return self.backend.normalize(query_vec)

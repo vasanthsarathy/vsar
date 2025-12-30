@@ -29,9 +29,7 @@ class TestRetriever:
         return KnowledgeBase(backend)
 
     @pytest.fixture
-    def encoder(
-        self, backend: FHRRBackend, registry: SymbolRegistry
-    ) -> VSAEncoder:
+    def encoder(self, backend: FHRRBackend, registry: SymbolRegistry) -> VSAEncoder:
         """Create test encoder."""
         return VSAEncoder(backend, registry, seed=42)
 
@@ -50,7 +48,7 @@ class TestRetriever:
         role_manager: RoleVectorManager,
     ) -> Retriever:
         """Create test retriever."""
-        return Retriever(backend, registry, kb, encoder, role_manager)
+        return Retriever(backend, registry, kb, encoder)
 
     def test_initialization(
         self,
@@ -61,12 +59,11 @@ class TestRetriever:
         role_manager: RoleVectorManager,
     ) -> None:
         """Test retriever initialization."""
-        retriever = Retriever(backend, registry, kb, encoder, role_manager)
+        retriever = Retriever(backend, registry, kb, encoder)
         assert retriever.backend == backend
         assert retriever.registry == registry
         assert retriever.kb == kb
         assert retriever.encoder == encoder
-        assert retriever.role_manager == role_manager
 
     def test_retrieve_simple_query(
         self, retriever: Retriever, encoder: VSAEncoder, kb: KnowledgeBase
@@ -131,9 +128,7 @@ class TestRetriever:
         # At least one parent should be retrieved
         assert "alice" in entity_names or "carol" in entity_names
 
-    def test_retrieve_nonexistent_predicate_raises_error(
-        self, retriever: Retriever
-    ) -> None:
+    def test_retrieve_nonexistent_predicate_raises_error(self, retriever: Retriever) -> None:
         """Test that querying nonexistent predicate raises ValueError."""
         with pytest.raises(ValueError, match="not found in KB"):
             retriever.retrieve("nonexistent", 2, {"1": "alice"}, k=5)
@@ -149,9 +144,7 @@ class TestRetriever:
         with pytest.raises(ValueError, match="cannot be in bound_args"):
             retriever.retrieve("parent", 2, {"1": "alice", "2": "bob"}, k=5)
 
-    def test_retrieve_empty_kb(
-        self, retriever: Retriever
-    ) -> None:
+    def test_retrieve_empty_kb(self, retriever: Retriever) -> None:
         """Test query on empty KB returns empty results."""
         # KB is empty, but we need to add a predicate first
         # Actually, if predicate doesn't exist, it raises ValueError
@@ -230,9 +223,7 @@ class TestRetriever:
         assert 2 in results  # Position 2 (X)
         assert 3 in results  # Position 3 (Y)
 
-    def test_retrieve_all_vars_empty_predicate(
-        self, retriever: Retriever
-    ) -> None:
+    def test_retrieve_all_vars_empty_predicate(self, retriever: Retriever) -> None:
         """Test retrieve_all_vars with no facts returns empty dict."""
         # No facts in KB
         results = retriever.retrieve_all_vars("parent", {}, k=5)

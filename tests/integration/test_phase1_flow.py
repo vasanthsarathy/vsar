@@ -16,7 +16,8 @@ class TestPhase1Integration:
         """Test complete VSAR program execution flow."""
         # Create a VSAR program file
         program_file = tmp_path / "test.vsar"
-        program_file.write_text("""
+        program_file.write_text(
+            """
             @model FHRR(dim=512, seed=42);
             @threshold(value=0.22);
 
@@ -25,7 +26,8 @@ class TestPhase1Integration:
             fact parent(bob, dave).
 
             query parent(alice, X)?
-        """)
+        """
+        )
 
         # Load and parse program
         program = load_vsar(program_file)
@@ -57,21 +59,21 @@ class TestPhase1Integration:
         """Test ingesting CSV facts and querying."""
         # Create CSV file
         csv_file = tmp_path / "facts.csv"
-        csv_file.write_text("""parent,alice,bob
+        csv_file.write_text(
+            """parent,alice,bob
 parent,alice,carol
 parent,bob,dave
 lives_in,alice,boston
 lives_in,bob,cambridge
-""")
+"""
+        )
 
         # Load facts
         facts = load_csv(csv_file)
         assert len(facts) == 5
 
         # Create engine
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         # Insert facts
@@ -90,19 +92,19 @@ lives_in,bob,cambridge
         """Test ingesting JSONL facts and querying."""
         # Create JSONL file
         jsonl_file = tmp_path / "facts.jsonl"
-        jsonl_file.write_text("""{"predicate": "parent", "args": ["alice", "bob"]}
+        jsonl_file.write_text(
+            """{"predicate": "parent", "args": ["alice", "bob"]}
 {"predicate": "parent", "args": ["alice", "carol"]}
 {"predicate": "parent", "args": ["bob", "dave"]}
-""")
+"""
+        )
 
         # Load facts
         facts = load_jsonl(jsonl_file)
         assert len(facts) == 3
 
         # Create engine
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         # Insert facts
@@ -120,9 +122,7 @@ lives_in,bob,cambridge
     def test_kb_persistence(self, tmp_path: Path) -> None:
         """Test saving and loading knowledge base."""
         # Create engine and insert facts
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine1 = VSAREngine(directives)
 
         facts = [
@@ -155,9 +155,7 @@ lives_in,bob,cambridge
 
     def test_kb_export_json(self, tmp_path: Path) -> None:
         """Test exporting KB to JSON."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         facts = [
@@ -177,9 +175,7 @@ lives_in,bob,cambridge
 
     def test_kb_export_jsonl(self, tmp_path: Path) -> None:
         """Test exporting KB to JSONL."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         facts = [
@@ -217,9 +213,7 @@ lives_in,bob,cambridge
 
     def test_trace_dag_construction(self, tmp_path: Path) -> None:
         """Test trace DAG is correctly constructed."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         # Insert facts
@@ -256,9 +250,7 @@ lives_in,bob,cambridge
     def test_deterministic_results(self, tmp_path: Path) -> None:
         """Test queries produce deterministic results with same seed."""
         # Create two engines with same config
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 100})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 100})]
 
         engine1 = VSAREngine(directives)
         engine2 = VSAREngine(directives)
@@ -287,9 +279,7 @@ lives_in,bob,cambridge
     def test_large_scale_ingestion(self, tmp_path: Path) -> None:
         """Test ingestion of larger fact set."""
         # Create 1000 facts
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 1024, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 1024, "seed": 42})]
         engine = VSAREngine(directives)
 
         # Generate facts programmatically

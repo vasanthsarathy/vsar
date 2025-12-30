@@ -22,9 +22,7 @@ class TestVSAREngine:
 
     def test_create_engine_with_model(self) -> None:
         """Test creating engine with model directive."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 100})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 100})]
         engine = VSAREngine(directives)
 
         assert engine.config["backend_type"] == "FHRR"
@@ -53,27 +51,21 @@ class TestVSAREngine:
 
     def test_create_engine_map_backend(self) -> None:
         """Test creating engine with MAP backend."""
-        directives = [
-            Directive(name="model", params={"type": "MAP", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "MAP", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         assert engine.config["backend_type"] == "MAP"
 
     def test_create_engine_invalid_backend(self) -> None:
         """Test creating engine with invalid backend raises error."""
-        directives = [
-            Directive(name="model", params={"type": "INVALID", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "INVALID", "dim": 512, "seed": 42})]
 
         with pytest.raises(ValueError, match="Unknown backend type"):
             VSAREngine(directives)
 
     def test_insert_fact(self) -> None:
         """Test inserting a fact."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         fact = Fact(predicate="parent", args=["alice", "bob"])
@@ -86,9 +78,7 @@ class TestVSAREngine:
 
     def test_insert_multiple_facts(self) -> None:
         """Test inserting multiple facts."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         facts = [
@@ -106,9 +96,7 @@ class TestVSAREngine:
 
     def test_query_simple(self) -> None:
         """Test simple query execution."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         # Insert facts
@@ -126,9 +114,7 @@ class TestVSAREngine:
 
     def test_query_results_format(self) -> None:
         """Test query results format."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         engine.insert_fact(Fact(predicate="parent", args=["alice", "bob"]))
@@ -144,9 +130,7 @@ class TestVSAREngine:
 
     def test_query_with_trace(self) -> None:
         """Test query creates trace events."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         engine.insert_fact(Fact(predicate="parent", args=["alice", "bob"]))
@@ -170,9 +154,7 @@ class TestVSAREngine:
 
     def test_query_multiple_variables_raises_error(self) -> None:
         """Test query with multiple variables raises error."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         # Query with 2 variables: parent(X, Y)
@@ -183,9 +165,7 @@ class TestVSAREngine:
 
     def test_query_no_variables_raises_error(self) -> None:
         """Test query with no variables raises error."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         # Query with no variables: parent(alice, bob)
@@ -196,9 +176,7 @@ class TestVSAREngine:
 
     def test_stats(self) -> None:
         """Test getting KB statistics."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         # Initially empty
@@ -215,9 +193,7 @@ class TestVSAREngine:
 
     def test_export_kb_json(self) -> None:
         """Test exporting KB to JSON."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         engine.insert_fact(Fact(predicate="parent", args=["alice", "bob"]))
@@ -227,9 +203,7 @@ class TestVSAREngine:
 
     def test_export_kb_jsonl(self) -> None:
         """Test exporting KB to JSONL."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         engine.insert_fact(Fact(predicate="parent", args=["alice", "bob"]))
@@ -242,9 +216,7 @@ class TestVSAREngine:
 
     def test_export_kb_invalid_format(self) -> None:
         """Test exporting KB with invalid format raises error."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         with pytest.raises(ValueError, match="Invalid export format"):
@@ -252,9 +224,7 @@ class TestVSAREngine:
 
     def test_save_and_load_kb(self, tmp_path: Path) -> None:
         """Test saving and loading KB."""
-        directives = [
-            Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})
-        ]
+        directives = [Directive(name="model", params={"type": "FHRR", "dim": 512, "seed": 42})]
         engine = VSAREngine(directives)
 
         # Insert facts

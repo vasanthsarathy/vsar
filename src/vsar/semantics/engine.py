@@ -5,7 +5,6 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from vsar.encoding.roles import RoleVectorManager
 from vsar.encoding.vsa_encoder import VSAEncoder
 from vsar.kb.store import KnowledgeBase
 from vsar.kernel.vsa_backend import FHRRBackend, MAPBackend
@@ -80,16 +79,12 @@ class VSAREngine:
         # Initialize KB
         self.kb = KnowledgeBase(self.backend)
 
-        # Initialize role manager
-        self.role_manager = RoleVectorManager(self.backend, seed=seed)
-
         # Initialize retriever
         self.retriever = Retriever(
             self.backend,
             self.registry,
             self.kb,
             self.encoder,
-            self.role_manager,
         )
 
         # Store retrieval parameters
@@ -179,9 +174,7 @@ class VSAREngine:
         bound_args = query.get_bound_args()
 
         if len(var_positions) != 1:
-            raise ValueError(
-                f"Query must have exactly 1 variable, got {len(var_positions)}"
-            )
+            raise ValueError(f"Query must have exactly 1 variable, got {len(var_positions)}")
 
         var_position = var_positions[0] + 1  # Convert to 1-indexed
 
@@ -259,9 +252,7 @@ class VSAREngine:
             for predicate in self.kb.predicates():
                 facts = self.kb.get_facts(predicate)
                 for fact in facts:
-                    lines.append(
-                        json.dumps({"predicate": predicate, "args": list(fact)})
-                    )
+                    lines.append(json.dumps({"predicate": predicate, "args": list(fact)}))
             return "\n".join(lines)
         else:
             raise ValueError(f"Invalid export format: {format}")
@@ -298,5 +289,4 @@ class VSAREngine:
             self.registry,
             self.kb,
             self.encoder,
-            self.role_manager,
         )

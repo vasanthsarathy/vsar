@@ -46,9 +46,7 @@ class TestRoleVectorManager:
         norm = jnp.linalg.norm(role1)
         assert jnp.abs(norm - 1.0) < 1e-5
 
-    def test_different_roles_are_different(
-        self, manager: RoleVectorManager
-    ) -> None:
+    def test_different_roles_are_different(self, manager: RoleVectorManager) -> None:
         """Test that different roles get different vectors."""
         role1 = manager.get_role(1)
         role2 = manager.get_role(2)
@@ -57,9 +55,7 @@ class TestRoleVectorManager:
         similarity = manager.backend.similarity(role1, role2)
         assert similarity < 0.9
 
-    def test_get_role_position_validation(
-        self, manager: RoleVectorManager
-    ) -> None:
+    def test_get_role_position_validation(self, manager: RoleVectorManager) -> None:
         """Test that position must be >= 1."""
         with pytest.raises(ValueError, match="Position must be >= 1"):
             manager.get_role(0)
@@ -90,9 +86,7 @@ class TestRoleVectorManager:
         manager.clear()
         assert len(manager._roles) == 0
 
-    def test_clear_does_not_affect_determinism(
-        self, manager: RoleVectorManager
-    ) -> None:
+    def test_clear_does_not_affect_determinism(self, manager: RoleVectorManager) -> None:
         """Test that clearing cache doesn't change vectors."""
         role1_before = manager.get_role(1)
         manager.clear()
@@ -112,9 +106,7 @@ class TestRoleVectorManager:
         assert sim_matrix[1, 1] > 0.99
         assert sim_matrix[2, 2] > 0.99
 
-    def test_similarity_matrix_off_diagonal(
-        self, manager: RoleVectorManager
-    ) -> None:
+    def test_similarity_matrix_off_diagonal(self, manager: RoleVectorManager) -> None:
         """Test that role vectors are dissimilar."""
         sim_matrix = manager.similarity_matrix(3)
 
@@ -124,9 +116,7 @@ class TestRoleVectorManager:
         assert abs(sim_matrix[0, 2]) < 0.6
         assert abs(sim_matrix[1, 2]) < 0.6
 
-    def test_different_seeds_produce_different_roles(
-        self, backend: FHRRBackend
-    ) -> None:
+    def test_different_seeds_produce_different_roles(self, backend: FHRRBackend) -> None:
         """Test that different seeds produce different role vectors."""
         manager1 = RoleVectorManager(backend, seed=42)
         manager2 = RoleVectorManager(backend, seed=123)
@@ -137,9 +127,7 @@ class TestRoleVectorManager:
         # Should be different
         assert not jnp.allclose(role1_a, role1_b)
 
-    def test_same_seed_produces_same_roles(
-        self, backend: FHRRBackend
-    ) -> None:
+    def test_same_seed_produces_same_roles(self, backend: FHRRBackend) -> None:
         """Test that same seed produces identical role vectors."""
         manager1 = RoleVectorManager(backend, seed=42)
         manager2 = RoleVectorManager(backend, seed=42)

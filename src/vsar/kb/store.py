@@ -11,15 +11,16 @@ class KnowledgeBase:
     """
     Predicate-partitioned knowledge base storage.
 
-    Stores ground atoms as hypervectors bundled by predicate. Each predicate
-    maintains a separate bundle to reduce noise during retrieval.
+    Stores ground atoms as separate hypervectors (not bundled) to enable
+    resonator-based filtering during retrieval. Each predicate maintains
+    a list of fact vectors.
 
     Storage structure:
-    - bundles: dict[predicate_name, bundled_hypervector]
+    - vectors: dict[predicate_name, list[fact_vectors]]
     - facts: dict[predicate_name, list[fact_tuples]]
 
     Args:
-        backend: Kernel backend for bundling operations
+        backend: Kernel backend for operations
 
     Example:
         >>> from vsar.kernel.vsa_backend import FHRRBackend
@@ -30,25 +31,25 @@ class KnowledgeBase:
         >>> kb.insert("parent", parent_alice_bob_vec, ("alice", "bob"))
         >>> kb.insert("parent", parent_bob_carol_vec, ("bob", "carol"))
         >>>
-        >>> # Retrieve predicate bundle
-        >>> bundle = kb.get_bundle("parent")
+        >>> # Retrieve fact vectors
+        >>> vectors = kb.get_vectors("parent")
+        >>> len(vectors)
+        2
         >>> kb.count("parent")
         2
     """
 
     def __init__(self, backend: KernelBackend):
         self.backend = backend
-        self._bundles: dict[str, jnp.ndarray] = {}
+        self._vectors: dict[str, list[jnp.ndarray]] = {}
         self._facts: dict[str, list[tuple[Any, ...]]] = {}
 
-    def insert(
-        self, predicate: str, atom_vector: jnp.ndarray, fact: tuple[Any, ...]
-    ) -> None:
+    def insert(self, predicate: str, atom_vector: jnp.ndarray, fact: tuple[Any, ...]) -> None:
         """
         Insert a ground atom into the knowledge base.
 
-        The atom vector is bundled with existing atoms for this predicate.
-        The fact tuple is stored for later reference.
+        The atom vector is stored separately (not bundled) to enable
+        resonator-based filtering during retrieval.
 
         Args:
             predicate: Predicate name (e.g., "parent")
@@ -61,33 +62,32 @@ class KnowledgeBase:
             1
         """
         # Initialize predicate storage if needed
-        if predicate not in self._bundles:
-            self._bundles[predicate] = atom_vector
+        if predicate not in self._vectors:
+            self._vectors[predicate] = [atom_vector]
             self._facts[predicate] = [fact]
         else:
-            # Bundle new atom with existing bundle
-            existing_bundle = self._bundles[predicate]
-            new_bundle = self.backend.bundle([existing_bundle, atom_vector])
-            self._bundles[predicate] = new_bundle
+            # Append to list of vectors (don't bundle)
+            self._vectors[predicate].append(atom_vector)
             self._facts[predicate].append(fact)
 
-    def get_bundle(self, predicate: str) -> jnp.ndarray | None:
+    def get_vectors(self, predicate: str) -> list[jnp.ndarray]:
         """
-        Get the bundled hypervector for a predicate.
+        Get all fact vectors for a predicate.
 
         Args:
             predicate: Predicate name
 
         Returns:
-            Bundled hypervector for all atoms of this predicate,
-            or None if predicate not found
+            List of fact vectors, or empty list if predicate not found
 
         Example:
-            >>> bundle = kb.get_bundle("parent")
-            >>> bundle.shape
+            >>> vectors = kb.get_vectors("parent")
+            >>> len(vectors)
+            2
+            >>> vectors[0].shape
             (512,)
         """
-        return self._bundles.get(predicate)
+        return self._vectors.get(predicate, [])
 
     def get_facts(self, predicate: str) -> list[tuple[Any, ...]]:
         """
@@ -117,7 +117,7 @@ class KnowledgeBase:
             >>> kb.predicates()
             ["parent", "sibling"]
         """
-        return list(self._bundles.keys())
+        return list(self._vectors.keys())
 
     def count(self, predicate: str | None = None) -> int:
         """
@@ -156,7 +156,7 @@ class KnowledgeBase:
             >>> kb.has_predicate("nonexistent")
             False
         """
-        return predicate in self._bundles
+        return predicate in self._vectors
 
     def clear(self) -> None:
         """
@@ -167,7 +167,7 @@ class KnowledgeBase:
             >>> kb.count()
             0
         """
-        self._bundles.clear()
+        self._vectors.clear()
         self._facts.clear()
 
     def clear_predicate(self, predicate: str) -> None:
@@ -182,6 +182,6 @@ class KnowledgeBase:
             >>> kb.has_predicate("parent")
             False
         """
-        if predicate in self._bundles:
-            del self._bundles[predicate]
+        if predicate in self._vectors:
+            del self._vectors[predicate]
             del self._facts[predicate]

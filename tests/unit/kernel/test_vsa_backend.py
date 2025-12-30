@@ -38,9 +38,7 @@ class TestFHRRBackend:
         vec2 = backend.generate_random(key, (512,))
         assert jnp.allclose(vec1, vec2)
 
-    def test_bind_unbind_roundtrip(
-        self, backend: FHRRBackend, key: jax.random.PRNGKey
-    ) -> None:
+    def test_bind_unbind_roundtrip(self, backend: FHRRBackend, key: jax.random.PRNGKey) -> None:
         """Test that bind/unbind achieves reasonable fidelity."""
         key1, key2 = jax.random.split(key)
         a = backend.generate_random(key1, (512,))
@@ -57,9 +55,7 @@ class TestFHRRBackend:
         sim = backend.similarity(b, b_recovered)
         assert sim > 0.4, f"Similarity {sim} too low for bind/unbind roundtrip"
 
-    def test_bind_commutativity(
-        self, backend: FHRRBackend, key: jax.random.PRNGKey
-    ) -> None:
+    def test_bind_commutativity(self, backend: FHRRBackend, key: jax.random.PRNGKey) -> None:
         """Test that FHRR binding is commutative."""
         key1, key2 = jax.random.split(key)
         a = backend.generate_random(key1, (512,))
@@ -84,9 +80,7 @@ class TestFHRRBackend:
             sim = backend.similarity(vec, bundled)
             assert sim > 0.2, "Bundled vector should retain similarity to components"
 
-    def test_bundle_from_array(
-        self, backend: FHRRBackend, key: jax.random.PRNGKey
-    ) -> None:
+    def test_bundle_from_array(self, backend: FHRRBackend, key: jax.random.PRNGKey) -> None:
         """Test bundling from numpy array."""
         keys = jax.random.split(key, 3)
         vectors = jnp.stack([backend.generate_random(k, (512,)) for k in keys])
@@ -151,9 +145,7 @@ class TestMAPBackend:
         vec2 = backend.generate_random(key, (512,))
         assert jnp.allclose(vec1, vec2)
 
-    def test_bind_unbind_roundtrip(
-        self, backend: MAPBackend, key: jax.random.PRNGKey
-    ) -> None:
+    def test_bind_unbind_roundtrip(self, backend: MAPBackend, key: jax.random.PRNGKey) -> None:
         """Test that bind/unbind achieves reasonable fidelity."""
         key1, key2 = jax.random.split(key)
         a = backend.generate_random(key1, (512,))
@@ -236,9 +228,7 @@ class TestBackendComparison:
         assert hasattr(map_backend, "generate_random")
         assert hasattr(map_backend, "normalize")
 
-    def test_polymorphic_usage(
-        self, fhrr: FHRRBackend, map_backend: MAPBackend
-    ) -> None:
+    def test_polymorphic_usage(self, fhrr: FHRRBackend, map_backend: MAPBackend) -> None:
         """Test that backends can be used polymorphically."""
         for backend in [fhrr, map_backend]:
             key = jax.random.PRNGKey(0)

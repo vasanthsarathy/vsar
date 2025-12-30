@@ -52,9 +52,7 @@ class TestSymbolRegistry:
         similarity = registry.backend.similarity(alice, bob)
         assert similarity < 0.9
 
-    def test_register_same_name_different_spaces(
-        self, registry: SymbolRegistry
-    ) -> None:
+    def test_register_same_name_different_spaces(self, registry: SymbolRegistry) -> None:
         """Test that same name in different spaces gets different vectors."""
         entity_alice = registry.register(SymbolSpace.ENTITIES, "alice")
         relation_alice = registry.register(SymbolSpace.RELATIONS, "alice")
@@ -106,9 +104,7 @@ class TestSymbolRegistry:
         scores = [score for _, score in results]
         assert scores == sorted(scores, reverse=True)
 
-    def test_cleanup_respects_space_boundaries(
-        self, registry: SymbolRegistry
-    ) -> None:
+    def test_cleanup_respects_space_boundaries(self, registry: SymbolRegistry) -> None:
         """Test that cleanup only searches within specified space."""
         entity_alice = registry.register(SymbolSpace.ENTITIES, "alice")
         registry.register(SymbolSpace.RELATIONS, "parent")
@@ -178,9 +174,7 @@ class TestSymbolRegistry:
         assert registry.count(SymbolSpace.RELATIONS) == 1
         assert registry.count(SymbolSpace.ATTRIBUTES) == 0
 
-    def test_save_and_load(
-        self, registry: SymbolRegistry, tmp_path: Path
-    ) -> None:
+    def test_save_and_load(self, registry: SymbolRegistry, tmp_path: Path) -> None:
         """Test save/load roundtrip."""
         # Register some symbols
         registry.register(SymbolSpace.ENTITIES, "alice")
@@ -214,9 +208,7 @@ class TestSymbolRegistry:
         assert registry.count() == 0
         assert registry.symbols() == []
 
-    def test_different_seeds_produce_different_registries(
-        self, backend: FHRRBackend
-    ) -> None:
+    def test_different_seeds_produce_different_registries(self, backend: FHRRBackend) -> None:
         """Test that different seeds produce different vectors."""
         registry1 = SymbolRegistry(backend, seed=42)
         registry2 = SymbolRegistry(backend, seed=123)

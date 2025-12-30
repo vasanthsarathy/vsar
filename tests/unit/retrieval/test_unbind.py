@@ -30,9 +30,7 @@ class TestUnbindOperations:
         return SymbolRegistry(backend, seed=42)
 
     @pytest.fixture
-    def encoder(
-        self, backend: FHRRBackend, registry: SymbolRegistry
-    ) -> VSAEncoder:
+    def encoder(self, backend: FHRRBackend, registry: SymbolRegistry) -> VSAEncoder:
         """Create test encoder."""
         return VSAEncoder(backend, registry, seed=42)
 
@@ -41,9 +39,7 @@ class TestUnbindOperations:
         """Create test role manager."""
         return RoleVectorManager(backend, seed=42)
 
-    def test_unbind_query_from_bundle(
-        self, backend: FHRRBackend, encoder: VSAEncoder
-    ) -> None:
+    def test_unbind_query_from_bundle(self, backend: FHRRBackend, encoder: VSAEncoder) -> None:
         """Test unbinding query from bundle."""
         # Encode a fact
         atom_vec = encoder.encode_atom("parent", ["alice", "bob"])
@@ -58,15 +54,11 @@ class TestUnbindOperations:
         assert result.shape == (128,)
         assert jnp.abs(jnp.linalg.norm(result) - 1.0) < 1e-5  # Normalized
 
-    def test_unbind_role(
-        self, backend: FHRRBackend, role_manager: RoleVectorManager
-    ) -> None:
+    def test_unbind_role(self, backend: FHRRBackend, role_manager: RoleVectorManager) -> None:
         """Test unbinding role vector."""
         # Create role-filler binding
         role1 = role_manager.get_role(1)
-        entity_vec = backend.generate_random(
-            jax.random.PRNGKey(0), (backend.dimension,)
-        )
+        entity_vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
         entity_vec = backend.normalize(entity_vec)
 
         # Bind role to entity
@@ -99,9 +91,7 @@ class TestUnbindOperations:
         role2 = role_manager.get_role(2)
 
         # Extract variable binding
-        entity_vec = extract_variable_binding(
-            atom_vec, query_vec, role2, backend
-        )
+        entity_vec = extract_variable_binding(atom_vec, query_vec, role2, backend)
 
         assert entity_vec is not None
         assert entity_vec.shape == (128,)
@@ -113,16 +103,10 @@ class TestUnbindOperations:
             # Might be low due to approximate nature of VSA
             assert similarity > 0.2
 
-    def test_unbind_preserves_normalization(
-        self, backend: FHRRBackend
-    ) -> None:
+    def test_unbind_preserves_normalization(self, backend: FHRRBackend) -> None:
         """Test that unbind operations preserve normalization."""
-        vec1 = backend.generate_random(
-            jax.random.PRNGKey(0), (backend.dimension,)
-        )
-        vec2 = backend.generate_random(
-            jax.random.PRNGKey(1), (backend.dimension,)
-        )
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimension,))
 
         vec1 = backend.normalize(vec1)
         vec2 = backend.normalize(vec2)

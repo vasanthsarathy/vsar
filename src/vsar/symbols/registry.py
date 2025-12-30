@@ -107,9 +107,7 @@ class SymbolRegistry:
             >>> print(f"Most likely symbol: {best_match} (score: {score:.3f})")
         """
         # Get all symbols in the specified space
-        space_symbols = [
-            (name, vec) for (s, name), vec in self._basis.items() if s == space
-        ]
+        space_symbols = [(name, vec) for (s, name), vec in self._basis.items() if s == space]
 
         if not space_symbols:
             return []

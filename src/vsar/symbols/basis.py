@@ -12,9 +12,7 @@ from vsar.kernel.base import KernelBackend
 from .spaces import SymbolSpace
 
 
-def generate_basis(
-    space: SymbolSpace, name: str, backend: KernelBackend, seed: int
-) -> jnp.ndarray:
+def generate_basis(space: SymbolSpace, name: str, backend: KernelBackend, seed: int) -> jnp.ndarray:
     """
     Generate a deterministic basis vector for a symbol.
 

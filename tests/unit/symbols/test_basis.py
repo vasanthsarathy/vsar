@@ -25,9 +25,7 @@ class TestGenerateBasis:
 
         assert jnp.allclose(vec1, vec2)
 
-    def test_different_names_produce_different_vectors(
-        self, backend: FHRRBackend
-    ) -> None:
+    def test_different_names_produce_different_vectors(self, backend: FHRRBackend) -> None:
         """Test that different names produce different vectors."""
         alice = generate_basis(SymbolSpace.ENTITIES, "alice", backend, seed=42)
         bob = generate_basis(SymbolSpace.ENTITIES, "bob", backend, seed=42)
@@ -36,9 +34,7 @@ class TestGenerateBasis:
         similarity = backend.similarity(alice, bob)
         assert similarity < 0.9  # Not too similar
 
-    def test_different_spaces_produce_different_vectors(
-        self, backend: FHRRBackend
-    ) -> None:
+    def test_different_spaces_produce_different_vectors(self, backend: FHRRBackend) -> None:
         """Test that same name in different spaces produces different vectors."""
         entity_alice = generate_basis(SymbolSpace.ENTITIES, "alice", backend, seed=42)
         relation_alice = generate_basis(SymbolSpace.RELATIONS, "alice", backend, seed=42)
@@ -47,9 +43,7 @@ class TestGenerateBasis:
         similarity = backend.similarity(entity_alice, relation_alice)
         assert similarity < 0.9
 
-    def test_different_seeds_produce_different_vectors(
-        self, backend: FHRRBackend
-    ) -> None:
+    def test_different_seeds_produce_different_vectors(self, backend: FHRRBackend) -> None:
         """Test that different seeds produce different vectors."""
         vec1 = generate_basis(SymbolSpace.ENTITIES, "alice", backend, seed=42)
         vec2 = generate_basis(SymbolSpace.ENTITIES, "alice", backend, seed=123)
@@ -86,9 +80,7 @@ class TestBasisPersistence:
             (SymbolSpace.ENTITIES, "alice"): generate_basis(
                 SymbolSpace.ENTITIES, "alice", backend, 42
             ),
-            (SymbolSpace.ENTITIES, "bob"): generate_basis(
-                SymbolSpace.ENTITIES, "bob", backend, 42
-            ),
+            (SymbolSpace.ENTITIES, "bob"): generate_basis(SymbolSpace.ENTITIES, "bob", backend, 42),
             (SymbolSpace.RELATIONS, "parent"): generate_basis(
                 SymbolSpace.RELATIONS, "parent", backend, 42
             ),
@@ -99,9 +91,7 @@ class TestBasisPersistence:
         """Create temporary file path."""
         return tmp_path / "test_basis.h5"
 
-    def test_save_and_load_roundtrip(
-        self, sample_basis: dict, temp_file: Path
-    ) -> None:
+    def test_save_and_load_roundtrip(self, sample_basis: dict, temp_file: Path) -> None:
         """Test that save/load preserves all data."""
         save_basis(temp_file, sample_basis)
         loaded_basis = load_basis(temp_file)
@@ -119,9 +109,7 @@ class TestBasisPersistence:
         save_basis(temp_file, sample_basis)
         assert temp_file.exists()
 
-    def test_save_creates_parent_directories(
-        self, sample_basis: dict, tmp_path: Path
-    ) -> None:
+    def test_save_creates_parent_directories(self, sample_basis: dict, tmp_path: Path) -> None:
         """Test that save creates parent directories if needed."""
         nested_path = tmp_path / "nested" / "dirs" / "basis.h5"
         assert not nested_path.parent.exists()
@@ -142,28 +130,22 @@ class TestBasisPersistence:
 
         assert len(loaded) == 0
 
-    def test_loaded_basis_preserves_spaces(
-        self, sample_basis: dict, temp_file: Path
-    ) -> None:
+    def test_loaded_basis_preserves_spaces(self, sample_basis: dict, temp_file: Path) -> None:
         """Test that symbol spaces are preserved correctly."""
         save_basis(temp_file, sample_basis)
         loaded_basis = load_basis(temp_file)
 
-        for (space, name) in loaded_basis.keys():
+        for space, name in loaded_basis.keys():
             assert isinstance(space, SymbolSpace)
             assert isinstance(name, str)
 
-    def test_multiple_symbols_same_space(
-        self, backend: FHRRBackend, temp_file: Path
-    ) -> None:
+    def test_multiple_symbols_same_space(self, backend: FHRRBackend, temp_file: Path) -> None:
         """Test saving/loading multiple symbols in same space."""
         basis = {
             (SymbolSpace.ENTITIES, "alice"): generate_basis(
                 SymbolSpace.ENTITIES, "alice", backend, 42
             ),
-            (SymbolSpace.ENTITIES, "bob"): generate_basis(
-                SymbolSpace.ENTITIES, "bob", backend, 42
-            ),
+            (SymbolSpace.ENTITIES, "bob"): generate_basis(SymbolSpace.ENTITIES, "bob", backend, 42),
             (SymbolSpace.ENTITIES, "carol"): generate_basis(
                 SymbolSpace.ENTITIES, "carol", backend, 42
             ),

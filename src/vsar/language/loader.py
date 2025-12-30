@@ -153,9 +153,7 @@ def load_vsar(path: Path | str) -> Program:
     return parse_file(path)
 
 
-def load_facts(
-    path: Path | str, format: str = "auto", predicate: str | None = None
-) -> list[Fact]:
+def load_facts(path: Path | str, format: str = "auto", predicate: str | None = None) -> list[Fact]:
     """Load facts from file with automatic format detection.
 
     Args:

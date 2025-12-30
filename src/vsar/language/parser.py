@@ -179,6 +179,7 @@ class Parser:
         if not path.exists():
             # Provide detailed error with absolute path
             import os
+
             cwd = os.getcwd()
             raise FileNotFoundError(
                 f"File not found: {path}\n"

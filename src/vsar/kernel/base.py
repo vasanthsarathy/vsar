@@ -54,9 +54,7 @@ class KernelBackend(ABC):
         pass
 
     @abstractmethod
-    def bundle(
-        self, vectors: list[jnp.ndarray] | jnp.ndarray, axis: int = 0
-    ) -> jnp.ndarray:
+    def bundle(self, vectors: list[jnp.ndarray] | jnp.ndarray, axis: int = 0) -> jnp.ndarray:
         """
         Superposition/bundling operation.
 
@@ -92,9 +90,7 @@ class KernelBackend(ABC):
         pass
 
     @abstractmethod
-    def generate_random(
-        self, key: jax.random.PRNGKey, shape: tuple[int, ...]
-    ) -> jnp.ndarray:
+    def generate_random(self, key: jax.random.PRNGKey, shape: tuple[int, ...]) -> jnp.ndarray:
         """
         Generate random basis vector.
 

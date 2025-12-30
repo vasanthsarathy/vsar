@@ -75,16 +75,14 @@ class TestDeterminism:
         registry1 = SymbolRegistry(backend1, seed=42)
         encoder1 = VSAEncoder(backend1, registry1, seed=42)
         kb1 = KnowledgeBase(backend1)
-        role_manager1 = RoleVectorManager(backend1, seed=42)
-        retriever1 = Retriever(backend1, registry1, kb1, encoder1, role_manager1)
+        retriever1 = Retriever(backend1, registry1, kb1, encoder1)
 
         # System 2
         backend2 = FHRRBackend(dim=512, seed=42)
         registry2 = SymbolRegistry(backend2, seed=42)
         encoder2 = VSAEncoder(backend2, registry2, seed=42)
         kb2 = KnowledgeBase(backend2)
-        role_manager2 = RoleVectorManager(backend2, seed=42)
-        retriever2 = Retriever(backend2, registry2, kb2, encoder2, role_manager2)
+        retriever2 = Retriever(backend2, registry2, kb2, encoder2)
 
         # Insert same facts
         facts = [
@@ -164,13 +162,15 @@ class TestDeterminism:
             atom_vec2 = encoder2.encode_atom("parent", list(args))
             kb2.insert("parent", atom_vec2, args)
 
-        # Bundles should be identical
-        bundle1 = kb1.get_bundle("parent")
-        bundle2 = kb2.get_bundle("parent")
+        # Vectors should be identical
+        vectors1 = kb1.get_vectors("parent")
+        vectors2 = kb2.get_vectors("parent")
 
-        assert bundle1 is not None
-        assert bundle2 is not None
-        assert jnp.allclose(bundle1, bundle2)
+        assert len(vectors1) > 0
+        assert len(vectors2) > 0
+        assert len(vectors1) == len(vectors2)
+        for v1, v2 in zip(vectors1, vectors2):
+            assert jnp.allclose(v1, v2)
 
     def test_repeated_runs_same_results(self) -> None:
         """Test that repeated runs produce same results."""
@@ -181,8 +181,7 @@ class TestDeterminism:
             registry = SymbolRegistry(backend, seed=42)
             encoder = VSAEncoder(backend, registry, seed=42)
             kb = KnowledgeBase(backend)
-            role_manager = RoleVectorManager(backend, seed=42)
-            retriever = Retriever(backend, registry, kb, encoder, role_manager)
+            retriever = Retriever(backend, registry, kb, encoder)
 
             # Insert facts
             facts = [("alice", "bob"), ("bob", "carol")]
@@ -225,15 +224,16 @@ class TestDeterminism:
         kb2.insert("parent", atom_b, ("carol", "dave"))
         kb2.insert("parent", atom_a, ("alice", "bob"))
 
-        # Bundles should be the same (bundling is commutative)
-        bundle1 = kb1.get_bundle("parent")
-        bundle2 = kb2.get_bundle("parent")
+        # Vectors should be the same (insertion order matters for list)
+        vectors1 = kb1.get_vectors("parent")
+        vectors2 = kb2.get_vectors("parent")
 
-        assert bundle1 is not None
-        assert bundle2 is not None
+        assert len(vectors1) > 0
+        assert len(vectors2) > 0
+        assert len(vectors1) == len(vectors2)
 
-        # For VSA bundling (sum + normalize), order shouldn't matter much
-        # But normalization might cause slight differences
-        # Let's check they're very similar
-        similarity = backend.similarity(bundle1, bundle2)
-        assert similarity > 0.99  # Should be nearly identical
+        # With shift-based encoding, insertion order matters for the list
+        # The vectors should be the same content but in different order
+        # Check that the first vector of kb1 matches the second of kb2 (reversed order)
+        assert jnp.allclose(vectors1[0], vectors2[1])  # alice,bob in kb1 = second in kb2
+        assert jnp.allclose(vectors1[1], vectors2[0])  # carol,dave in kb1 = first in kb2

@@ -31,9 +31,7 @@ class TestCleanup:
 
         return registry
 
-    def test_cleanup_exact_match(
-        self, backend: FHRRBackend, registry: SymbolRegistry
-    ) -> None:
+    def test_cleanup_exact_match(self, backend: FHRRBackend, registry: SymbolRegistry) -> None:
         """Test cleanup with exact vector match."""
         # Get exact vector for alice
         alice_vec = registry.get(SymbolSpace.ENTITIES, "alice")
@@ -46,17 +44,13 @@ class TestCleanup:
         assert results[0][0] == "alice"
         assert results[0][1] > 0.99  # Near perfect similarity
 
-    def test_cleanup_noisy_vector(
-        self, backend: FHRRBackend, registry: SymbolRegistry
-    ) -> None:
+    def test_cleanup_noisy_vector(self, backend: FHRRBackend, registry: SymbolRegistry) -> None:
         """Test cleanup with noisy vector."""
         # Get alice's vector and add noise
         alice_vec = registry.get(SymbolSpace.ENTITIES, "alice")
         assert alice_vec is not None
 
-        noise = backend.generate_random(
-            jax.random.PRNGKey(999), (backend.dimension,)
-        )
+        noise = backend.generate_random(jax.random.PRNGKey(999), (backend.dimension,))
         noise = backend.normalize(noise) * 0.1  # Small noise
 
         noisy_vec = alice_vec + noise
@@ -68,9 +62,7 @@ class TestCleanup:
         assert len(results) > 0
         assert results[0][0] == "alice"
 
-    def test_cleanup_returns_top_k(
-        self, backend: FHRRBackend, registry: SymbolRegistry
-    ) -> None:
+    def test_cleanup_returns_top_k(self, backend: FHRRBackend, registry: SymbolRegistry) -> None:
         """Test that cleanup returns at most k results."""
         alice_vec = registry.get(SymbolSpace.ENTITIES, "alice")
         assert alice_vec is not None
@@ -92,13 +84,9 @@ class TestCleanup:
         scores = [score for _, score in results]
         assert scores == sorted(scores, reverse=True)
 
-    def test_cleanup_empty_space(
-        self, backend: FHRRBackend, registry: SymbolRegistry
-    ) -> None:
+    def test_cleanup_empty_space(self, backend: FHRRBackend, registry: SymbolRegistry) -> None:
         """Test cleanup on empty symbol space."""
-        vec = backend.generate_random(
-            jax.random.PRNGKey(0), (backend.dimension,)
-        )
+        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
         vec = backend.normalize(vec)
 
         # ATTRIBUTES space is empty
@@ -123,9 +111,7 @@ class TestCleanup:
         entity_names = [name for name, _ in results]
         assert "parent" not in entity_names
 
-    def test_batch_cleanup(
-        self, backend: FHRRBackend, registry: SymbolRegistry
-    ) -> None:
+    def test_batch_cleanup(self, backend: FHRRBackend, registry: SymbolRegistry) -> None:
         """Test batch cleanup on multiple vectors."""
         alice_vec = registry.get(SymbolSpace.ENTITIES, "alice")
         bob_vec = registry.get(SymbolSpace.ENTITIES, "bob")
@@ -133,21 +119,15 @@ class TestCleanup:
         assert bob_vec is not None
 
         vectors = [alice_vec, bob_vec]
-        results = batch_cleanup(
-            SymbolSpace.ENTITIES, vectors, registry, backend, k=3
-        )
+        results = batch_cleanup(SymbolSpace.ENTITIES, vectors, registry, backend, k=3)
 
         assert len(results) == 2
         assert results[0][0][0] == "alice"  # First result, top match
         assert results[1][0][0] == "bob"  # Second result, top match
 
-    def test_batch_cleanup_empty_list(
-        self, backend: FHRRBackend, registry: SymbolRegistry
-    ) -> None:
+    def test_batch_cleanup_empty_list(self, backend: FHRRBackend, registry: SymbolRegistry) -> None:
         """Test batch cleanup with empty list."""
-        results = batch_cleanup(
-            SymbolSpace.ENTITIES, [], registry, backend, k=5
-        )
+        results = batch_cleanup(SymbolSpace.ENTITIES, [], registry, backend, k=5)
 
         assert results == []
 
@@ -158,9 +138,7 @@ class TestCleanup:
         alice_vec = registry.get(SymbolSpace.ENTITIES, "alice")
         assert alice_vec is not None
 
-        result = get_top_symbol(
-            SymbolSpace.ENTITIES, alice_vec, registry, backend
-        )
+        result = get_top_symbol(SymbolSpace.ENTITIES, alice_vec, registry, backend)
 
         assert result is not None
         assert result[0] == "alice"
@@ -170,14 +148,10 @@ class TestCleanup:
         self, backend: FHRRBackend, registry: SymbolRegistry
     ) -> None:
         """Test get_top_symbol on empty space returns None."""
-        vec = backend.generate_random(
-            jax.random.PRNGKey(0), (backend.dimension,)
-        )
+        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
         vec = backend.normalize(vec)
 
-        result = get_top_symbol(
-            SymbolSpace.ATTRIBUTES, vec, registry, backend
-        )
+        result = get_top_symbol(SymbolSpace.ATTRIBUTES, vec, registry, backend)
 
         assert result is None
 

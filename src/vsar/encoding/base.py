@@ -31,9 +31,7 @@ class AtomEncoder(ABC):
         >>> query_vec = encoder.encode_query("parent", ["alice", None])
     """
 
-    def __init__(
-        self, backend: KernelBackend, registry: SymbolRegistry, seed: int = 42
-    ):
+    def __init__(self, backend: KernelBackend, registry: SymbolRegistry, seed: int = 42):
         self.backend = backend
         self.registry = registry
         self.seed = seed
@@ -61,9 +59,7 @@ class AtomEncoder(ABC):
         pass
 
     @abstractmethod
-    def encode_query(
-        self, predicate: str, args: list[str | None]
-    ) -> jnp.ndarray:
+    def encode_query(self, predicate: str, args: list[str | None]) -> jnp.ndarray:
         """
         Encode a query pattern into a hypervector.
 

@@ -1,50 +1,49 @@
-"""Query retrieval interface."""
+"""Query retrieval interface using resonator filtering."""
 
 from typing import Any
 
 import jax.numpy as jnp
 
-from vsar.encoding.roles import RoleVectorManager
 from vsar.encoding.vsa_encoder import VSAEncoder
 from vsar.kb.store import KnowledgeBase
 from vsar.kernel.base import KernelBackend
 from vsar.retrieval.cleanup import cleanup
-from vsar.retrieval.unbind import extract_variable_binding
 from vsar.symbols.registry import SymbolRegistry
 from vsar.symbols.spaces import SymbolSpace
 
 
 class Retriever:
     """
-    Top-k retrieval for VSAR queries.
+    Top-k retrieval for VSAR queries using resonator filtering.
 
-    Orchestrates the retrieval pipeline:
-    1. Encode query pattern with bound arguments
-    2. Get KB bundle for predicate
-    3. Unbind query to extract variable binding
-    4. Cleanup to find top-k matching symbols
+    Orchestrates the retrieval pipeline using shift-based encoding:
+    1. Get all fact vectors for the predicate (stored separately, not bundled)
+    2. For each fact, decode bound argument positions and compute similarity
+    3. Weight facts by how well they match bound arguments (resonator filtering)
+    4. Create weighted bundle of matching facts
+    5. Decode variable position from weighted bundle
+    6. Cleanup to find top-k matching symbols
+
+    This approach avoids bind/unbind operations which are broken in vsax.
 
     Args:
         backend: Kernel backend
         registry: Symbol registry
         kb: Knowledge base
         encoder: Atom encoder
-        role_manager: Role vector manager
 
     Example:
         >>> from vsar.kernel.vsa_backend import FHRRBackend
         >>> from vsar.symbols.registry import SymbolRegistry
         >>> from vsar.kb.store import KnowledgeBase
         >>> from vsar.encoding.vsa_encoder import VSAEncoder
-        >>> from vsar.encoding.roles import RoleVectorManager
         >>>
         >>> backend = FHRRBackend(dim=512, seed=42)
         >>> registry = SymbolRegistry(backend, seed=42)
         >>> kb = KnowledgeBase(backend)
         >>> encoder = VSAEncoder(backend, registry, seed=42)
-        >>> role_manager = RoleVectorManager(backend, seed=42)
         >>>
-        >>> retriever = Retriever(backend, registry, kb, encoder, role_manager)
+        >>> retriever = Retriever(backend, registry, kb, encoder)
         >>>
         >>> # Insert facts
         >>> atom_vec = encoder.encode_atom("parent", ["alice", "bob"])
@@ -62,13 +61,11 @@ class Retriever:
         registry: SymbolRegistry,
         kb: KnowledgeBase,
         encoder: VSAEncoder,
-        role_manager: RoleVectorManager,
     ):
         self.backend = backend
         self.registry = registry
         self.kb = kb
         self.encoder = encoder
-        self.role_manager = role_manager
 
     def retrieve(
         self,
@@ -78,7 +75,7 @@ class Retriever:
         k: int = 10,
     ) -> list[tuple[str, float]]:
         """
-        Retrieve top-k bindings for a variable in a query.
+        Retrieve top-k bindings for a variable in a query using resonator filtering.
 
         Args:
             predicate: Predicate name (e.g., "parent")
@@ -93,6 +90,7 @@ class Retriever:
         Raises:
             ValueError: If predicate not in KB
             ValueError: If var_position is in bound_args
+            ValueError: If no bound arguments provided
 
         Example:
             >>> # Query: parent(alice, X) where X is at position 2
@@ -105,45 +103,56 @@ class Retriever:
             raise ValueError(f"Predicate '{predicate}' not found in KB")
 
         if str(var_position) in bound_args:
-            raise ValueError(
-                f"Variable position {var_position} cannot be in bound_args"
-            )
+            raise ValueError(f"Variable position {var_position} cannot be in bound_args")
 
-        # Get KB bundle for predicate
-        kb_bundle = self.kb.get_bundle(predicate)
-        if kb_bundle is None:
+        if not bound_args:
+            raise ValueError("At least one argument must be bound for querying")
+
+        # Get fact vectors for predicate
+        fact_vectors = self.kb.get_vectors(predicate)
+        if not fact_vectors:
             return []
 
-        # Determine arity from KB facts
-        facts = self.kb.get_facts(predicate)
-        if not facts:
+        # Resonator filtering: compute weights for each fact
+        weights = []
+        for fact_vec in fact_vectors:
+            # For each bound argument, check if this fact matches
+            fact_weight = 1.0
+            for pos_str, entity in bound_args.items():
+                position = int(pos_str)
+
+                # Decode this position from the fact
+                decoded = self.backend.permute(fact_vec, -position)
+
+                # Get entity vector
+                entity_vec = self.registry.register(SymbolSpace.ENTITIES, entity)
+
+                # Compute similarity
+                similarity = self.backend.similarity(decoded, entity_vec)
+
+                # Multiply weights (all bound args must match)
+                fact_weight *= max(0.0, float(similarity))
+
+            weights.append(fact_weight)
+
+        # Create weighted bundle
+        if not any(w > 0 for w in weights):
+            # No matching facts
             return []
 
-        arity = len(facts[0])
+        # Weighted sum of fact vectors
+        weighted_bundle = jnp.zeros_like(fact_vectors[0])
+        for i, fact_vec in enumerate(fact_vectors):
+            weighted_bundle = weighted_bundle + weights[i] * fact_vec
 
-        # Build argument list with None for variable position
-        args: list[str | None] = [None] * arity
-        for pos_str, entity in bound_args.items():
-            pos = int(pos_str)
-            if pos < 1 or pos > arity:
-                raise ValueError(f"Position {pos} out of range for arity {arity}")
-            args[pos - 1] = entity
+        # Normalize
+        weighted_bundle = self.backend.normalize(weighted_bundle)
 
-        # Encode query pattern
-        query_vec = self.encoder.encode_query(predicate, args)
-
-        # Get role vector for variable position
-        role_vec = self.role_manager.get_role(var_position)
-
-        # Extract variable binding
-        entity_vec = extract_variable_binding(
-            kb_bundle, query_vec, role_vec, self.backend
-        )
+        # Decode variable position
+        entity_vec = self.backend.permute(weighted_bundle, -var_position)
 
         # Cleanup to find top-k matches
-        results = cleanup(
-            SymbolSpace.ENTITIES, entity_vec, self.registry, self.backend, k
-        )
+        results = cleanup(SymbolSpace.ENTITIES, entity_vec, self.registry, self.backend, k)
 
         return results
 
@@ -183,9 +192,7 @@ class Retriever:
 
         # Find unbound positions
         bound_positions = {int(pos) for pos in bound_args.keys()}
-        unbound_positions = [
-            pos for pos in range(1, arity + 1) if pos not in bound_positions
-        ]
+        unbound_positions = [pos for pos in range(1, arity + 1) if pos not in bound_positions]
 
         # Retrieve for each unbound position
         results = {}
