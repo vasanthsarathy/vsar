@@ -198,7 +198,7 @@ Or in the program:
 
 ```prolog
 @model FHRR(dim=1024, seed=42);
-@beam 50;  // Affects rule processing (Phase 2)
+@beam(width=50);  // Affects rule processing (Phase 2)
 
 // Queries return top-k results (default: 10)
 ```

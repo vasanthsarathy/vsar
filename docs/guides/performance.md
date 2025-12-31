@@ -9,9 +9,9 @@ Guide to optimizing VSAR performance for your workload.
 Controls candidate bindings in joins:
 
 ```prolog
-@beam 50;    // Default
-@beam 100;   // More candidates, slower but more complete
-@beam 20;    // Fewer candidates, faster
+@beam(width=50);    // Default
+@beam(width=100);   // More candidates, slower but more complete
+@beam(width=20);    // Fewer candidates, faster
 ```
 
 **Guidelines:**
@@ -24,9 +24,9 @@ Controls candidate bindings in joins:
 Controls duplicate detection:
 
 ```prolog
-@novelty 0.95;   // Default (balanced)
-@novelty 0.99;   // Stricter (more facts, slower)
-@novelty 0.90;   // Looser (fewer facts, faster)
+@novelty(threshold=0.95);   // Default (balanced)
+@novelty(threshold=0.99);   // Stricter (more facts, slower)
+@novelty(threshold=0.90);   // Looser (fewer facts, faster)
 ```
 
 ### 3. Dimensionality

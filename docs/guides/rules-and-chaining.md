@@ -100,9 +100,9 @@ rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
 ### Configuration
 
 ```prolog
-@model FHRR(dim=1024, seed=42);   // VSA model configuration
-@beam 50;                          // Beam width for joins (default: 50)
-@novelty 0.95;                     // Novelty threshold (default: 0.95)
+@model FHRR(dim=1024, seed=42);         // VSA model configuration
+@beam(width=50);                        // Beam width for joins (default: 50)
+@novelty(threshold=0.95);               // Novelty threshold (default: 0.95)
 ```
 
 **Parameters:**
@@ -232,7 +232,7 @@ Before inserting a derived fact:
 ### Configuration
 
 ```prolog
-@novelty 0.95;   // 95% similarity = duplicate
+@novelty(threshold=0.95);   // 95% similarity = duplicate
 ```
 
 **Higher threshold** (e.g., 0.99):
@@ -308,9 +308,9 @@ rule connected(X, Z) :- connected(X, Y), connected(Y, Z).
 Controls candidate bindings in joins:
 
 ```prolog
-@beam 50;    // Default: top-50 candidates
-@beam 100;   // More candidates, slower but more complete
-@beam 20;    // Fewer candidates, faster but may miss results
+@beam(width=50);    // Default: top-50 candidates
+@beam(width=100);   // More candidates, slower but more complete
+@beam(width=20);    // Fewer candidates, faster but may miss results
 ```
 
 **Guidelines:**
@@ -336,9 +336,9 @@ apply_rules(engine, rules, max_iterations=100)  # Stop after 100 iterations
 Balance between speed and completeness:
 
 ```prolog
-@novelty 0.99;   // Strict (more facts, slower)
-@novelty 0.95;   // Balanced (default)
-@novelty 0.90;   // Loose (fewer facts, faster)
+@novelty(threshold=0.99);   // Strict (more facts, slower)
+@novelty(threshold=0.95);   // Balanced (default)
+@novelty(threshold=0.90);   // Loose (fewer facts, faster)
 ```
 
 ## Tracing

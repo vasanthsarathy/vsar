@@ -105,8 +105,8 @@ Create `reasoning.vsar`:
 
 ```prolog
 @model FHRR(dim=1024, seed=42);
-@beam 50;
-@novelty 0.95;
+@beam(width=50);
+@novelty(threshold=0.95);
 
 // Base facts: Parent relationships
 fact parent(alice, bob).
@@ -338,8 +338,8 @@ query ancestor(alice, X)?       // Find all descendants (transitive)
 
 // Retrieval parameters
 @threshold 0.22;                   // Similarity threshold
-@beam 50;                          // Beam width for joins
-@novelty 0.95;                     // Novelty detection threshold
+@beam(width=50);                   // Beam width for joins
+@novelty(threshold=0.95);          // Novelty detection threshold
 ```
 
 ### Comments

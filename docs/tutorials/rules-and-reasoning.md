@@ -22,7 +22,7 @@ Create `tutorial2.vsar`:
 
 ```prolog
 @model FHRR(dim=1024, seed=42);
-@beam 50;
+@beam(width=50);
 
 fact person(alice).
 fact person(bob).
@@ -73,7 +73,7 @@ Rules can have multiple conditions:
 
 ```prolog
 @model FHRR(dim=1024, seed=42);
-@beam 50;
+@beam(width=50);
 
 fact parent(alice, bob).
 fact parent(bob, carol).
@@ -103,8 +103,8 @@ Rules can reference themselves for transitive closure:
 
 ```prolog
 @model FHRR(dim=1024, seed=42);
-@beam 50;
-@novelty 0.95;
+@beam(width=50);
+@novelty(threshold=0.95);
 
 fact parent(alice, bob).
 fact parent(bob, carol).
@@ -152,7 +152,7 @@ You can define multiple rules that interact:
 
 ```prolog
 @model FHRR(dim=1024, seed=42);
-@beam 50;
+@beam(width=50);
 
 fact parent(alice, bob).
 fact parent(alice, carol).
@@ -223,9 +223,9 @@ for entity, score in result.results:
 Controls candidate bindings in joins:
 
 ```prolog
-@beam 50;    // Default: keep top-50 candidates
-@beam 100;   // More candidates, slower but more complete
-@beam 20;    // Fewer candidates, faster
+@beam(width=50);    // Default: keep top-50 candidates
+@beam(width=100);   // More candidates, slower but more complete
+@beam(width=20);    // Fewer candidates, faster
 ```
 
 ### Novelty Threshold
@@ -233,9 +233,9 @@ Controls candidate bindings in joins:
 Prevents duplicate derived facts:
 
 ```prolog
-@novelty 0.95;   // Default: 95% similarity = duplicate
-@novelty 0.99;   // Stricter (more facts stored)
-@novelty 0.90;   // Looser (fewer facts stored)
+@novelty(threshold=0.95);   // Default: 95% similarity = duplicate
+@novelty(threshold=0.99);   // Stricter (more facts stored)
+@novelty(threshold=0.90);   // Looser (fewer facts stored)
 ```
 
 ## Common Rule Patterns

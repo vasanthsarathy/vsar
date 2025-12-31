@@ -13,8 +13,8 @@ Learn to model and query complex knowledge graphs with multiple relation types.
 
 ```prolog
 @model FHRR(dim=1024, seed=42);
-@beam 100;
-@novelty 0.95;
+@beam(width=100);
+@novelty(threshold=0.95);
 
 // Social connections
 fact knows(alice, bob).

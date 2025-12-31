@@ -85,8 +85,8 @@ Now let's add some rules for deductive reasoning:
 
 ```prolog
 @model FHRR(dim=1024, seed=42);
-@beam 50;
-@novelty 0.95;
+@beam(width=50);
+@novelty(threshold=0.95);
 
 // Base facts
 fact parent(alice, bob).

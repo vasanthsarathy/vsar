@@ -20,8 +20,8 @@ VSAR includes 6 comprehensive example programs demonstrating different reasoning
 ```prolog
 // Configuration
 @model FHRR(dim=512, seed=42);
-@beam 50;
-@novelty 0.95;
+@beam(width=50);
+@novelty(threshold=0.95);
 
 // Base facts: People
 fact person(alice).
@@ -53,8 +53,8 @@ vsar run examples/01_basic_rules.vsar
 
 ```prolog
 @model FHRR(dim=1024, seed=42);
-@beam 50;
-@novelty 0.95;
+@beam(width=50);
+@novelty(threshold=0.95);
 
 // Base facts: Parent relationships
 fact parent(alice, bob).
@@ -85,8 +85,8 @@ query parent(alice, ?)?           // Alice's children (base facts)
 
 ```prolog
 @model FHRR(dim=1024, seed=42);
-@beam 50;
-@novelty 0.95;
+@beam(width=50);
+@novelty(threshold=0.95);
 
 // Base facts: Parent relationships (3 generations)
 fact parent(alice, bob).
@@ -117,8 +117,8 @@ query ancestor(?, eve)?     // All of Eve's ancestors
 
 ```prolog
 @model FHRR(dim=512, seed=100);
-@beam 50;
-@novelty 0.95;
+@beam(width=50);
+@novelty(threshold=0.95);
 
 // Base facts: Management structure
 fact manages(ceo, vp_eng).
@@ -153,8 +153,8 @@ query reports_to(?, ceo)?          // Who reports to the CEO (all levels)?
 
 ```prolog
 @model FHRR(dim=512, seed=50);
-@beam 50;
-@novelty 0.95;
+@beam(width=50);
+@novelty(threshold=0.95);
 
 // Base facts: Different types of relationships
 fact knows(alice, bob).
@@ -188,8 +188,8 @@ query works_with(alice, ?)?  // Who does Alice work with (direct)?
 
 ```prolog
 @model FHRR(dim=1024, seed=42);
-@beam 100;
-@novelty 0.95;
+@beam(width=100);
+@novelty(threshold=0.95);
 
 // Base facts: Academic relationships
 fact advises(prof_smith, phd_alice).
@@ -314,8 +314,8 @@ rule unified(X, Z) :- unified(X, Y), unified(Y, Z).  // Make transitive
 ```prolog
 // 1. Configuration
 @model FHRR(dim=1024, seed=42);
-@beam 50;
-@novelty 0.95;
+@beam(width=50);
+@novelty(threshold=0.95);
 
 // 2. Base facts
 fact predicate(arg1, arg2).

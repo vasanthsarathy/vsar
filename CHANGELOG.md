@@ -234,8 +234,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Define rules in your VSAR programs using `rule head :- body1, body2.` syntax
 - Query with automatic rule application: `engine.query(query, rules=rules)`
 - Forward chaining: `from vsar.semantics.chaining import apply_rules`
-- Configure beam width: `@beam 50;`
-- Configure novelty threshold: `@novelty 0.95;`
+- Configure beam width: `@beam(width=50);`
+- Configure novelty threshold: `@novelty(threshold=0.95);`
 
 **Breaking Changes:**
 None - fully backward compatible

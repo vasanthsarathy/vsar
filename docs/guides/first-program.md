@@ -50,7 +50,7 @@ Update `family.vsar`:
 
 ```prolog
 @model FHRR(dim=1024, seed=42);
-@beam 50;
+@beam(width=50);
 
 fact parent(alice, bob).
 fact parent(bob, carol).

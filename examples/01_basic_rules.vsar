@@ -3,8 +3,8 @@
 
 // Configuration
 @model FHRR(dim=512, seed=42);
-@beam 50;
-@novelty 0.95;
+@beam(width=50);
+@novelty(threshold=0.95);
 
 // Base facts: People
 fact person(alice).

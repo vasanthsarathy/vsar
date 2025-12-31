@@ -24,8 +24,8 @@ Answer: bob, carol, dave, eve (all reachable through parent chain)
 
 ```prolog
 @model FHRR(dim=1024, seed=42);
-@beam 50;
-@novelty 0.95;
+@beam(width=50);
+@novelty(threshold=0.95);
 
 // Base facts: Direct parent relationships
 fact parent(alice, bob).
@@ -149,7 +149,7 @@ result = apply_rules(engine, rules, semi_naive=True)  # Default
 For deep transitive closure:
 
 ```prolog
-@beam 100;  // Increase for deeper chains
+@beam(width=100);  // Increase for deeper chains
 ```
 
 ### 4. Monitor Progress
