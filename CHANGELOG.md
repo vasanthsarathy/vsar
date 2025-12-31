@@ -5,6 +5,47 @@ All notable changes to VSAR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-12-31
+
+### Fixed
+
+**Critical bug fixes for v0.3.0:**
+
+- **Fixed directive syntax in all examples and documentation**
+  - Examples used incorrect syntax `@beam 50;` and `@novelty 0.95;`
+  - Parser requires `@beam(width=50);` and `@novelty(threshold=0.95);`
+  - Fixed in all 6 example files, all documentation, README, and CHANGELOG
+  - Users can now run examples without parser errors
+
+- **Fixed query variable syntax in all examples**
+  - Examples used `?` as variable placeholder (e.g., `query parent(?)?`)
+  - Parser requires uppercase variable names (e.g., `query parent(X)?`)
+  - Fixed in all 6 example files
+  - Queries now parse correctly
+
+- **Fixed CLI to pass rules to query execution**
+  - The `vsar run` command wasn't passing program rules to queries
+  - This prevented derived predicates from being queried
+  - Fixed in `src/vsar/cli/main.py`
+  - Rules now work correctly when running programs via CLI
+
+### Added
+
+- **Created syntax cheat sheet** (`docs/syntax-cheatsheet.md`)
+  - Quick reference for correct VSAR syntax
+  - Common mistakes vs. correct syntax examples
+  - Added to documentation navigation
+
+### Changed
+
+- **Updated language reference** (`docs/language-reference.md`)
+  - Marked Phase 2 (rules) as complete
+  - Added comprehensive rules documentation
+  - Added `@beam` and `@novelty` directive documentation
+  - Updated query limitations section
+
+**Impact:** These fixes make v0.3.0 examples actually usable. All 6 examples now run successfully.
+
 ## [0.3.0] - 2025-12-31
 
 ### Added - Phase 2: Horn Rules & Chaining
