@@ -90,7 +90,7 @@ Sets the similarity threshold for retrieval.
 
 ### @beam (Phase 2)
 
-Sets beam width for forward chaining (not yet implemented in Phase 1).
+Sets beam width for forward chaining joins.
 
 **Syntax:**
 
@@ -98,11 +98,53 @@ Sets beam width for forward chaining (not yet implemented in Phase 1).
 @beam(width=INTEGER);
 ```
 
-**Example:**
+**Parameters:**
+
+- `width` - Number of candidate bindings to keep during joins (default: 50)
+
+**Examples:**
 
 ```prolog
-@beam(width=50);
+@beam(width=50);   // Default
+@beam(width=100);  // More candidates, slower but more complete
+@beam(width=20);   // Fewer candidates, faster
 ```
+
+**Guidelines:**
+
+- Small KB (<1K facts): 20-50
+- Medium KB (1K-10K): 50-100
+- Large KB (>10K): 100-200
+
+---
+
+### @novelty (Phase 2)
+
+Sets novelty detection threshold to prevent duplicate derived facts.
+
+**Syntax:**
+
+```prolog
+@novelty(threshold=FLOAT);
+```
+
+**Parameters:**
+
+- `threshold` - Similarity threshold for duplicate detection (0.0 to 1.0, default: 0.95)
+
+**Examples:**
+
+```prolog
+@novelty(threshold=0.95);  // Default (balanced)
+@novelty(threshold=0.99);  // Stricter (more facts, slower)
+@novelty(threshold=0.90);  // Looser (fewer facts, faster)
+```
+
+**Guidelines:**
+
+- Higher threshold = stricter duplicate detection
+- Lower threshold = looser duplicate detection
+- Typical range: 0.90 to 0.99
 
 ---
 
@@ -205,16 +247,25 @@ query transfer(X, bob, money)?      // Who transferred money to bob?
 query transfer(alice, bob, X)?      // What did alice transfer to bob?
 ```
 
-**Phase 1 Limitation:**
+**Current Limitations:**
 
-- **One variable only** - Multi-variable queries not yet supported
-- **Single atom** - Conjunctive queries (multiple atoms) coming in Phase 2
+- **One variable only** - Multi-variable queries not yet supported (planned for Phase 3)
+- **Single atom** - Conjunctive queries (multiple atoms) not yet supported
 
-**Invalid in Phase 1:**
+**Invalid:**
 
 ```prolog
-query parent(X, Y)?                 // Error: 2 variables
-query parent(X, bob), parent(bob, Y)?  // Error: conjunction
+query parent(X, Y)?                    // Error: 2 variables (Phase 3)
+query parent(X, bob), parent(bob, Y)?  // Error: conjunction (use rules instead)
+```
+
+**Note:** For multi-hop reasoning, use rules instead of conjunctive queries:
+
+```prolog
+// Instead of: query parent(X, bob), parent(bob, Y)?
+// Use rules:
+rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+query grandparent(alice, X)?
 ```
 
 ---
@@ -287,24 +338,80 @@ query works_at(X, mit)?
 
 ---
 
-## Rules (Phase 2 - Coming Soon)
+## Rules (Phase 2)
 
-Rules define derived relationships using Horn clauses.
+Rules define derived relationships using Horn clauses. **Phase 2 is now complete!**
 
-**Syntax (Phase 2):**
+**Syntax:**
 
 ```prolog
-rule PREDICATE(ARGS) :- BODY.
+rule HEAD :- BODY1, BODY2, ..., BODYN.
 ```
 
-**Examples (not yet supported):**
+**Components:**
 
+- `HEAD` - Single atom (the derived fact)
+- `BODY1, BODY2, ...` - One or more atoms (the conditions)
+- Variables in HEAD must appear in BODY
+- Comma `,` represents conjunction (AND)
+
+**Examples:**
+
+**Single-body rule:**
+```prolog
+rule human(X) :- person(X).
+```
+
+**Multi-body rule (join):**
 ```prolog
 rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
-rule sibling(X, Y) :- parent(P, X), parent(P, Y), X != Y.
+```
+
+**Recursive rules (transitive closure):**
+```prolog
+// Base case
 rule ancestor(X, Y) :- parent(X, Y).
+
+// Recursive case
 rule ancestor(X, Z) :- parent(X, Y), ancestor(Y, Z).
 ```
+
+**Multiple rules with same head:**
+```prolog
+// Combine different sources
+rule connected(X, Y) :- knows(X, Y).
+rule connected(X, Y) :- works_with(X, Y).
+rule connected(X, Z) :- connected(X, Y), connected(Y, Z).
+```
+
+**Configuration directives for rules:**
+
+```prolog
+@beam(width=50);           // Beam width for joins (default: 50)
+@novelty(threshold=0.95);  // Novelty detection threshold (default: 0.95)
+```
+
+**Complete example:**
+
+```prolog
+@model FHRR(dim=1024, seed=42);
+@beam(width=50);
+@novelty(threshold=0.95);
+
+// Base facts
+fact parent(alice, bob).
+fact parent(bob, carol).
+fact parent(carol, dave).
+
+// Rules
+rule ancestor(X, Y) :- parent(X, Y).
+rule ancestor(X, Z) :- parent(X, Y), ancestor(Y, Z).
+
+// Query derived facts
+query ancestor(alice, X)?
+```
+
+See [Rules & Chaining Guide](guides/rules-and-chaining.md) for detailed documentation.
 
 ---
 

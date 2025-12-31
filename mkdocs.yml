@@ -39,6 +39,7 @@ nav:
     - Installation: getting-started.md
     - Quick Start: guides/quick-start.md
     - Your First Program: guides/first-program.md
+    - Syntax Cheat Sheet: syntax-cheatsheet.md
   - Tutorials:
     - Basic Facts & Queries: tutorials/basic-queries.md
     - Rules & Reasoning: tutorials/rules-and-reasoning.md
