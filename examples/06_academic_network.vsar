@@ -38,3 +38,4 @@ query academic_ancestor(prof_smith, X)?   // Prof Smith's academic descendants
 query collaborator(prof_smith, X)?        // Prof Smith's collaboration network
 query academic_sibling(phd_alice, X)?     // PhD Alice's academic siblings
 query coauthor(prof_jones, X)?            // Prof Jones's coauthors (symmetric)
+

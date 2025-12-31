@@ -5,6 +5,48 @@ All notable changes to VSAR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-12-31
+
+### Added - VSAR IDE (Interactive Development Environment)
+
+**New Feature: Complete IDE for VSAR**
+- Built using Python and Tkinter (no extra dependencies)
+- Similar to DrRacket - focused, educational IDE for VSARL
+
+**IDE Features:**
+- **Split-pane interface**: Editor (left) + Console (right)
+- **Syntax highlighting**: Real-time highlighting for VSARL syntax
+  - Keywords (fact, rule, query) in blue
+  - Directives (@model, @beam) in purple
+  - Comments (// and /* */) in gray
+  - Variables (uppercase) in orange
+  - Predicates (lowercase) in black
+- **File operations**: New, Open, Save, Save As with keyboard shortcuts
+- **Program execution**: Run entire programs (F5) with integrated VSAR engine
+- **Interactive queries**: Run queries on-demand (Ctrl+Q) against loaded KB
+- **KB statistics**: View facts and predicates breakdown
+- **Console output**: Color-coded results, errors, and status messages
+- **Welcome screen**: Quick start guide on launch
+- **Keyboard shortcuts**: Full set of shortcuts for common operations
+
+**New Files:**
+- `src/vsar/ide/__init__.py` - IDE package
+- `src/vsar/ide/main.py` - Main IDE application (450+ lines)
+- `src/vsar/ide/highlighter.py` - Syntax highlighter
+- `src/vsar/ide/runner.py` - Program execution engine
+- `tests/integration/test_ide_integration.py` - Integration tests
+
+**Entry Point:**
+- Added `vsar-ide` command to launch the IDE
+- Usage: `vsar-ide` or `python -m vsar.ide.main`
+
+**Testing:**
+- Tested with all 6 example programs (100% success rate)
+- Syntax highlighting verified for all VSARL elements
+- Cross-platform compatible (Windows, Linux, macOS)
+
+**Impact:** Provides a complete visual development environment for VSAR, making it much more accessible for learning and development. Similar to how DrRacket makes Racket accessible.
+
 ## [0.3.3] - 2025-12-31
 
 ### Fixed
