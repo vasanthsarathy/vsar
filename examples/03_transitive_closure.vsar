@@ -1,0 +1,26 @@
+// Example 3: Transitive Closure (Ancestor Chain)
+// Demonstrates recursive rules and multi-hop inference
+
+// Configuration
+@model FHRR(dim=1024, seed=42);
+@beam 50;
+@novelty 0.95;
+
+// Base facts: Parent relationships (3 generations)
+fact parent(alice, bob).
+fact parent(bob, carol).
+fact parent(carol, dave).
+fact parent(dave, eve).
+
+// Rules: Ancestor relationship (transitive closure)
+// Base case: If X is parent of Y, then X is ancestor of Y
+rule ancestor(X, Y) :- parent(X, Y).
+
+// Recursive case: If X is parent of Y and Y is ancestor of Z,
+// then X is ancestor of Z
+rule ancestor(X, Z) :- parent(X, Y), ancestor(Y, Z).
+
+// Queries
+query ancestor(alice, ?)?   // All of Alice's descendants
+query ancestor(?, eve)?     // All of Eve's ancestors
+query parent(alice, ?)?     // Just Alice's direct children

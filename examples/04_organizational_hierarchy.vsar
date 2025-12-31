@@ -1,0 +1,32 @@
+// Example 4: Organizational Hierarchy
+// Demonstrates manager chains and reporting relationships
+
+// Configuration
+@model FHRR(dim=512, seed=100);
+@beam 50;
+@novelty 0.95;
+
+// Base facts: Management structure
+// CEO -> VPs -> Directors -> Managers -> Employees
+fact manages(ceo, vp_eng).
+fact manages(ceo, vp_sales).
+fact manages(vp_eng, dir_backend).
+fact manages(vp_eng, dir_frontend).
+fact manages(dir_backend, mgr_api).
+fact manages(dir_frontend, mgr_ui).
+fact manages(mgr_api, dev_alice).
+fact manages(mgr_api, dev_bob).
+fact manages(mgr_ui, dev_carol).
+
+// Rules: Reports-to relationship (transitive)
+// Base case: If Y manages X, then X reports to Y
+rule reports_to(X, Y) :- manages(Y, X).
+
+// Recursive case: If Y manages X and Y reports to Z,
+// then X reports to Z (transitive reporting)
+rule reports_to(X, Z) :- manages(Y, X), reports_to(Y, Z).
+
+// Queries
+query reports_to(dev_alice, ?)?    // Who does Alice report to (all levels)?
+query reports_to(?, ceo)?          // Who reports to the CEO (all levels)?
+query manages(mgr_api, ?)?         // Who does the API manager directly manage?

@@ -219,3 +219,94 @@ class TestKnowledgeBase:
         assert kb.get_facts("human") == [("alice",)]
         assert kb.get_facts("parent") == [("alice", "bob")]
         assert kb.get_facts("gave") == [("alice", "bob", "book")]
+
+    def test_contains_similar_identical_fact(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
+        """Test contains_similar returns True for identical fact."""
+        # Generate a vector
+        vec = backend.generate_random(jax.random.PRNGKey(42), (backend.dimension,))
+
+        # Insert fact
+        kb.insert("parent", vec, ("alice", "bob"))
+
+        # Check if same vector is considered similar
+        assert kb.contains_similar("parent", vec, threshold=0.95)
+
+    def test_contains_similar_very_similar_fact(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
+        """Test contains_similar returns True for very similar fact."""
+        # Generate two vectors from same seed (will be identical)
+        vec1 = backend.generate_random(jax.random.PRNGKey(42), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(42), (backend.dimension,))
+
+        # Insert first fact
+        kb.insert("parent", vec1, ("alice", "bob"))
+
+        # Check if similar vector is detected
+        assert kb.contains_similar("parent", vec2, threshold=0.95)
+
+    def test_contains_similar_novel_fact(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
+        """Test contains_similar returns False for novel fact."""
+        # Generate two different vectors
+        vec1 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(2), (backend.dimension,))
+
+        # Insert first fact
+        kb.insert("parent", vec1, ("alice", "bob"))
+
+        # Check if different vector is considered novel
+        # With random vectors, similarity should be low
+        is_similar = kb.contains_similar("parent", vec2, threshold=0.95)
+
+        # Random vectors typically have very low similarity
+        # This assertion may occasionally fail due to randomness, but very unlikely
+        assert not is_similar
+
+    def test_contains_similar_nonexistent_predicate(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
+        """Test contains_similar returns False for nonexistent predicate."""
+        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+
+        # Check nonexistent predicate
+        assert not kb.contains_similar("nonexistent", vec, threshold=0.95)
+
+    def test_contains_similar_empty_predicate(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
+        """Test contains_similar returns False when predicate has no facts."""
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimension,))
+
+        # Insert fact then clear predicate
+        kb.insert("parent", vec1, ("alice", "bob"))
+        kb.clear_predicate("parent")
+
+        # Should return False (no facts to compare against)
+        assert not kb.contains_similar("parent", vec2, threshold=0.95)
+
+    def test_contains_similar_different_threshold(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
+        """Test contains_similar with different threshold values."""
+        # Generate two somewhat similar vectors (same seed + slight variation)
+        vec1 = backend.generate_random(jax.random.PRNGKey(42), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(43), (backend.dimension,))
+
+        kb.insert("parent", vec1, ("alice", "bob"))
+
+        # With very high threshold (0.99), different vectors should not match
+        assert not kb.contains_similar("parent", vec2, threshold=0.99)
+
+        # With lower threshold, more likely to match (but still unlikely for random vectors)
+        # Just test that the function accepts different thresholds
+        kb.contains_similar("parent", vec2, threshold=0.5)
+
+    def test_contains_similar_multiple_facts(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
+        """Test contains_similar checks against all facts in predicate."""
+        # Insert multiple facts
+        vec1 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(2), (backend.dimension,))
+        vec3 = backend.generate_random(jax.random.PRNGKey(3), (backend.dimension,))
+
+        kb.insert("parent", vec1, ("alice", "bob"))
+        kb.insert("parent", vec2, ("bob", "carol"))
+
+        # Check if vec3 matches any existing fact
+        # Should check all facts, not just first one
+        is_similar = kb.contains_similar("parent", vec3, threshold=0.95)
+
+        # Random vectors should not be similar
+        assert not is_similar

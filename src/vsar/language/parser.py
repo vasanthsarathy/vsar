@@ -6,7 +6,7 @@ from typing import Any
 from lark import Lark, Token, Transformer, Tree
 from lark.exceptions import UnexpectedInput, VisitError
 
-from vsar.language.ast import Directive, Fact, Program, Query
+from vsar.language.ast import Atom, Directive, Fact, Program, Query, Rule
 
 
 class VSARLTransformer(Transformer):
@@ -16,6 +16,7 @@ class VSARLTransformer(Transformer):
         """Build Program from statements."""
         directives = []
         facts = []
+        rules = []
         queries = []
 
         for item in items:
@@ -23,13 +24,15 @@ class VSARLTransformer(Transformer):
                 directives.append(item)
             elif isinstance(item, Fact):
                 facts.append(item)
+            elif isinstance(item, Rule):
+                rules.append(item)
             elif isinstance(item, Query):
                 queries.append(item)
 
-        return Program(directives=directives, facts=facts, queries=queries)
+        return Program(directives=directives, facts=facts, rules=rules, queries=queries)
 
-    def statement(self, items: list[Any]) -> Directive | Fact | Query:
-        """Extract statement (directive, fact, or query)."""
+    def statement(self, items: list[Any]) -> Directive | Fact | Rule | Query:
+        """Extract statement (directive, fact, rule, or query)."""
         return items[0]
 
     def directive(self, items: list[Any]) -> Directive:
@@ -81,17 +84,19 @@ class VSARLTransformer(Transformer):
     def fact(self, items: list[Any]) -> Fact:
         """Build Fact from fact atom."""
         predicate, args = items[0]
-        # Ensure all args are strings (no None/variables in facts)
-        if any(arg is None for arg in args):
+        # Ensure all args are lowercase (no variables in facts)
+        if any(arg[0].isupper() for arg in args):
             raise ValueError("Facts cannot contain variables")
         return Fact(predicate=predicate, args=args)
 
     def query(self, items: list[Any]) -> Query:
         """Build Query from query atom?"""
         predicate, args = items[0]
-        return Query(predicate=predicate, args=args)
+        # Convert variable strings to None for Query
+        query_args = [None if (arg and arg[0].isupper()) else arg for arg in args]
+        return Query(predicate=predicate, args=query_args)
 
-    def atom(self, items: list[Any]) -> tuple[str, list[str | None]]:
+    def atom(self, items: list[Any]) -> tuple[str, list[str]]:
         """Build (predicate, args) from atom."""
         predicate = str(items[0])
         args = items[1] if len(items) > 1 else []
@@ -101,11 +106,11 @@ class VSARLTransformer(Transformer):
         """Extract predicate name."""
         return str(items[0])
 
-    def args(self, items: list[Any]) -> list[str | None]:
+    def args(self, items: list[Any]) -> list[str]:
         """Build args list."""
         return items
 
-    def arg(self, items: list[Any]) -> str | None:
+    def arg(self, items: list[Any]) -> str:
         """Extract arg (constant or variable)."""
         return items[0]
 
@@ -113,19 +118,35 @@ class VSARLTransformer(Transformer):
         """Extract constant."""
         return str(items[0])
 
-    def variable(self, items: list[Any]) -> None:
-        """Extract variable (return None as placeholder)."""
-        # Variables are represented as None in the Query args
-        return None
+    def rule(self, items: list[Any]) -> Rule:
+        """Build Rule from rule atom :- body."""
+        head_pred, head_args = items[0]
+        # Convert to Atom (preserving variable names as strings)
+        head = Atom(predicate=head_pred, args=head_args)
+        # Body is a list of atoms
+        body_atoms = items[1]
+        return Rule(head=head, body=body_atoms)
+
+    def body(self, items: list[Any]) -> list[Atom]:
+        """Build list of Atoms from body."""
+        atoms = []
+        for predicate, args in items:
+            atoms.append(Atom(predicate=predicate, args=args))
+        return atoms
+
+    def variable(self, items: list[Any]) -> str:
+        """Extract variable name as string."""
+        # For rules, we need the actual variable name
+        # For queries, the query() method will convert to None
+        return str(items[0])
 
     def LOWER_NAME(self, token: Token) -> str:
         """Extract lowercase name."""
         return str(token)
 
-    def UPPER_NAME(self, token: Token) -> None:
-        """Extract uppercase name (variable)."""
-        # Return None to indicate this is a variable
-        return None
+    def UPPER_NAME(self, token: Token) -> str:
+        """Extract uppercase name (variable) as string."""
+        return str(token)
 
     def IDENTIFIER(self, token: Token) -> str:
         """Extract identifier."""

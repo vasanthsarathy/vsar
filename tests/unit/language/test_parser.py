@@ -1,7 +1,7 @@
 """Tests for VSARL parser."""
 
 import pytest
-from vsar.language.ast import Directive, Fact, Program, Query
+from vsar.language.ast import Atom, Directive, Fact, Program, Query, Rule
 from vsar.language.parser import Parser, parse
 
 
@@ -18,6 +18,7 @@ class TestParser:
         program = parser.parse("")
         assert len(program.directives) == 0
         assert len(program.facts) == 0
+        assert len(program.rules) == 0
         assert len(program.queries) == 0
 
     def test_parse_single_directive(self, parser: Parser) -> None:
@@ -177,6 +178,97 @@ class TestParser:
         text = "fact parent(alice, X)."
         with pytest.raises(ValueError, match="cannot contain variables"):
             parser.parse(text)
+
+    def test_parse_single_body_rule(self, parser: Parser) -> None:
+        """Test parsing rule with single body atom."""
+        text = "rule human(X) :- person(X)."
+        program = parser.parse(text)
+        assert len(program.rules) == 1
+        rule = program.rules[0]
+        assert rule.head.predicate == "human"
+        assert rule.head.args == ["X"]
+        assert len(rule.body) == 1
+        assert rule.body[0].predicate == "person"
+        assert rule.body[0].args == ["X"]
+
+    def test_parse_multi_body_rule(self, parser: Parser) -> None:
+        """Test parsing rule with multiple body atoms (grandparent example)."""
+        text = "rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z)."
+        program = parser.parse(text)
+        assert len(program.rules) == 1
+        rule = program.rules[0]
+        assert rule.head.predicate == "grandparent"
+        assert rule.head.args == ["X", "Z"]
+        assert len(rule.body) == 2
+        assert rule.body[0].predicate == "parent"
+        assert rule.body[0].args == ["X", "Y"]
+        assert rule.body[1].predicate == "parent"
+        assert rule.body[1].args == ["Y", "Z"]
+
+    def test_parse_rule_with_constants(self, parser: Parser) -> None:
+        """Test parsing rule with constants in body."""
+        text = "rule lives_in_boston(X) :- person(X), lives_in(X, boston)."
+        program = parser.parse(text)
+        assert len(program.rules) == 1
+        rule = program.rules[0]
+        assert rule.head.args == ["X"]
+        assert rule.body[1].args == ["X", "boston"]
+
+    def test_parse_rule_all_variables(self, parser: Parser) -> None:
+        """Test parsing rule with all variables."""
+        text = "rule connected(X, Y) :- edge(X, Y)."
+        program = parser.parse(text)
+        rule = program.rules[0]
+        assert rule.head.args == ["X", "Y"]
+        assert rule.body[0].args == ["X", "Y"]
+
+    def test_parse_multiple_rules(self, parser: Parser) -> None:
+        """Test parsing multiple rules."""
+        text = """
+        rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+        rule sibling(X, Y) :- parent(Z, X), parent(Z, Y).
+        """
+        program = parser.parse(text)
+        assert len(program.rules) == 2
+        assert program.rules[0].head.predicate == "grandparent"
+        assert program.rules[1].head.predicate == "sibling"
+
+    def test_parse_program_with_rules(self, parser: Parser) -> None:
+        """Test parsing complete program with facts, rules, and queries."""
+        text = """
+        @model FHRR(dim=8192, seed=42);
+
+        fact parent(alice, bob).
+        fact parent(bob, carol).
+
+        rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+
+        query grandparent(alice, Z)?
+        """
+        program = parser.parse(text)
+        assert len(program.directives) == 1
+        assert len(program.facts) == 2
+        assert len(program.rules) == 1
+        assert len(program.queries) == 1
+
+    def test_atom_get_variables(self) -> None:
+        """Test Atom.get_variables() method."""
+        atom = Atom(predicate="parent", args=["alice", "X"])
+        assert atom.get_variables() == ["X"]
+
+        atom2 = Atom(predicate="test", args=["X", "Y", "Z"])
+        assert atom2.get_variables() == ["X", "Y", "Z"]
+
+        atom3 = Atom(predicate="test", args=["alice", "bob"])
+        assert atom3.get_variables() == []
+
+    def test_atom_is_ground(self) -> None:
+        """Test Atom.is_ground() method."""
+        ground_atom = Atom(predicate="parent", args=["alice", "bob"])
+        assert ground_atom.is_ground()
+
+        variable_atom = Atom(predicate="parent", args=["alice", "X"])
+        assert not variable_atom.is_ground()
 
     def test_convenience_function(self) -> None:
         """Test convenience parse function."""

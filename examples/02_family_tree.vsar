@@ -1,0 +1,23 @@
+// Example 2: Family Tree Reasoning
+// Demonstrates multi-hop inference with grandparent rules
+
+// Configuration
+@model FHRR(dim=1024, seed=42);
+@beam 50;
+@novelty 0.95;
+
+// Base facts: Parent relationships
+fact parent(alice, bob).
+fact parent(alice, carol).
+fact parent(bob, dave).
+fact parent(bob, eve).
+fact parent(carol, frank).
+
+// Rule: Grandparent relationship
+// X is a grandparent of Z if X is parent of Y and Y is parent of Z
+rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+
+// Queries
+query grandparent(alice, ?)?      // Alice's grandchildren
+query grandparent(?, dave)?       // Dave's grandparents
+query parent(alice, ?)?           // Alice's children (base facts)

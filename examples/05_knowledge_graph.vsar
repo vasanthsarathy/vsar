@@ -1,0 +1,33 @@
+// Example 5: Knowledge Graph with Multiple Relations
+// Demonstrates combining different predicates via rules
+
+// Configuration
+@model FHRR(dim=512, seed=50);
+@beam 50;
+@novelty 0.95;
+
+// Base facts: Different types of relationships
+// Social connections
+fact knows(alice, bob).
+fact knows(bob, carol).
+fact knows(carol, dave).
+
+// Professional connections
+fact works_with(alice, eve).
+fact works_with(eve, dave).
+fact works_with(bob, frank).
+
+// Rules: General connection (combines both relationship types)
+// Anyone who knows someone is connected
+rule connected(X, Y) :- knows(X, Y).
+
+// Anyone who works with someone is connected
+rule connected(X, Y) :- works_with(X, Y).
+
+// Connection is transitive
+rule connected(X, Z) :- connected(X, Y), connected(Y, Z).
+
+// Queries
+query connected(alice, ?)?   // Who is Alice connected to (all paths)?
+query knows(alice, ?)?       // Who does Alice know (direct)?
+query works_with(alice, ?)?  // Who does Alice work with (direct)?

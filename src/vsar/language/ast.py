@@ -47,16 +47,48 @@ class Query(BaseModel):
         return {str(i + 1): arg for i, arg in enumerate(self.args) if arg is not None}
 
 
+class Atom(BaseModel):
+    """Atom with variables: parent(X, bob) or parent(alice, Y)."""
+
+    predicate: str = Field(..., description="Predicate name (lowercase)")
+    args: list[str] = Field(..., description="Arguments (constants or variables)")
+
+    def __repr__(self) -> str:
+        args_str = ", ".join(self.args)
+        return f"{self.predicate}({args_str})"
+
+    def get_variables(self) -> list[str]:
+        """Return list of variable names (uppercase args)."""
+        return [arg for arg in self.args if arg[0].isupper()]
+
+    def is_ground(self) -> bool:
+        """Check if atom is ground (no variables)."""
+        return len(self.get_variables()) == 0
+
+
+class Rule(BaseModel):
+    """Horn rule: head :- body1, body2, ..."""
+
+    head: Atom = Field(..., description="Head atom")
+    body: list[Atom] = Field(..., description="Body atoms")
+
+    def __repr__(self) -> str:
+        body_str = ", ".join(repr(atom) for atom in self.body)
+        return f"rule {repr(self.head)} :- {body_str}."
+
+
 class Program(BaseModel):
     """Complete VSARL program."""
 
     directives: list[Directive] = Field(default_factory=list, description="Directives")
     facts: list[Fact] = Field(default_factory=list, description="Facts")
+    rules: list[Rule] = Field(default_factory=list, description="Rules")
     queries: list[Query] = Field(default_factory=list, description="Queries")
 
     def __repr__(self) -> str:
         parts = []
         parts.extend(repr(d) for d in self.directives)
         parts.extend(repr(f) for f in self.facts)
+        parts.extend(repr(r) for r in self.rules)
         parts.extend(repr(q) for q in self.queries)
         return "\n".join(parts)

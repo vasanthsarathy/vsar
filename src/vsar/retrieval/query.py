@@ -105,13 +105,26 @@ class Retriever:
         if str(var_position) in bound_args:
             raise ValueError(f"Variable position {var_position} cannot be in bound_args")
 
-        if not bound_args:
-            raise ValueError("At least one argument must be bound for querying")
-
         # Get fact vectors for predicate
         fact_vectors = self.kb.get_vectors(predicate)
         if not fact_vectors:
             return []
+
+        # If no bound arguments, skip resonator filtering (return all entities)
+        if not bound_args:
+            # Just decode the variable position from each fact
+            candidates: list[tuple[str, float]] = []
+            for fact_vec in fact_vectors:
+                # Decode variable position
+                shifted_fact = self.backend.permute(fact_vec, -var_position)
+                cleanup_results = self.registry.cleanup(SymbolSpace.ENTITIES, shifted_fact, k=1)
+                if cleanup_results:
+                    entity, score = cleanup_results[0]
+                    candidates.append((entity, score))
+
+            # Sort by score and return top k
+            candidates.sort(key=lambda x: x[1], reverse=True)
+            return candidates[:k]
 
         # Resonator filtering: compute weights for each fact
         weights = []

@@ -185,3 +185,47 @@ class KnowledgeBase:
         if predicate in self._vectors:
             del self._vectors[predicate]
             del self._facts[predicate]
+
+    def contains_similar(
+        self, predicate: str, atom_vector: jnp.ndarray, threshold: float = 0.95
+    ) -> bool:
+        """
+        Check if a similar fact already exists in the KB.
+
+        Uses cosine similarity to detect near-duplicate facts. Useful for
+        novelty detection when deriving facts from rules.
+
+        Args:
+            predicate: Predicate name
+            atom_vector: Encoded atom vector to check
+            threshold: Similarity threshold (0.0 to 1.0). Facts with similarity
+                      above this threshold are considered duplicates.
+
+        Returns:
+            True if a similar fact exists (similarity > threshold), False otherwise
+
+        Example:
+            >>> # Check if parent(alice, bob) already exists
+            >>> vec = encoder.encode_atom("parent", ["alice", "bob"])
+            >>> kb.contains_similar("parent", vec, threshold=0.95)
+            True
+        """
+        if predicate not in self._vectors:
+            # Predicate doesn't exist - definitely novel
+            return False
+
+        existing_vectors = self._vectors[predicate]
+
+        if not existing_vectors:
+            # No facts for this predicate - novel
+            return False
+
+        # Check similarity with all existing facts
+        for existing_vec in existing_vectors:
+            similarity = self.backend.similarity(atom_vector, existing_vec)
+            if similarity > threshold:
+                # Found a similar fact - not novel
+                return True
+
+        # No similar facts found - novel
+        return False

@@ -8,8 +8,10 @@ from pydantic import BaseModel
 from vsar.encoding.vsa_encoder import VSAEncoder
 from vsar.kb.store import KnowledgeBase
 from vsar.kernel.vsa_backend import FHRRBackend, MAPBackend
-from vsar.language.ast import Directive, Fact, Query
+from vsar.language.ast import Directive, Fact, Query, Rule
 from vsar.retrieval.query import Retriever
+from vsar.semantics.join import initial_candidates_from_atom, join_with_atom
+from vsar.semantics.substitution import Substitution, get_atom_unique_variables
 from vsar.symbols.registry import SymbolRegistry
 from vsar.trace.collector import TraceCollector
 
@@ -90,6 +92,7 @@ class VSAREngine:
         # Store retrieval parameters
         self.threshold = self.config.get("threshold", 0.22)
         self.beam_width = self.config.get("beam", 50)
+        self.novelty_threshold = self.config.get("novelty", 0.95)
 
     def _parse_config(self, directives: list[Directive]) -> dict[str, Any]:
         """Parse directives into configuration dict.
@@ -124,6 +127,10 @@ class VSAREngine:
                 # @beam(width=50);
                 config["beam"] = directive.params.get("width", 50)
 
+            elif directive.name == "novelty":
+                # @novelty(threshold=0.95);
+                config["novelty"] = directive.params.get("threshold", 0.95)
+
         return config
 
     def insert_fact(self, fact: Fact) -> None:
@@ -141,19 +148,30 @@ class VSAREngine:
         # Insert into KB
         self.kb.insert(fact.predicate, atom_vec, tuple(fact.args))
 
-    def query(self, query: Query, k: int | None = None) -> QueryResult:
-        """Execute a query with tracing.
+    def query(self, query: Query, k: int | None = None, rules: list[Rule] | None = None) -> QueryResult:
+        """Execute a query with tracing and optional rule application.
+
+        If rules are provided, forward chaining is applied first to derive
+        new facts. The query is then executed on the enriched knowledge base.
 
         Args:
             query: Query to execute
             k: Number of results to retrieve (default: 10)
+            rules: Optional rules to apply before querying
 
         Returns:
             QueryResult with results and trace ID
 
         Example:
+            >>> # Query without rules (only base facts)
             >>> result = engine.query(Query(predicate="parent", args=["alice", None]))
-            >>> result.results  # [(entity, score), ...]
+            >>> result.results  # [(bob, score), ...]
+
+            >>> # Query with rules (derives facts first)
+            >>> rules = [Rule(head=Atom("grandparent", ["X","Z"]),
+            ...              body=[Atom("parent", ["X","Y"]), Atom("parent", ["Y","Z"])])]
+            >>> result = engine.query(Query("grandparent", ["alice", None]), rules=rules)
+            >>> result.results  # [(carol, score)] - derived from rules!
         """
         if k is None:
             k = 10
@@ -166,8 +184,28 @@ class VSAREngine:
                 "args": query.args,
                 "variables": query.get_variables(),
                 "bound_args": query.get_bound_args(),
+                "has_rules": rules is not None,
             },
         )
+
+        # Apply rules first if provided
+        if rules is not None:
+            from vsar.semantics.chaining import apply_rules
+
+            chaining_result = apply_rules(self, rules, max_iterations=100, k=k)
+
+            # Record chaining in trace
+            self.trace.record(
+                "chaining",
+                {
+                    "num_rules": len(rules),
+                    "iterations": chaining_result.iterations,
+                    "total_derived": chaining_result.total_derived,
+                    "fixpoint_reached": chaining_result.fixpoint_reached,
+                    "derived_per_iteration": chaining_result.derived_per_iteration,
+                },
+                parent_ids=[trace_id],
+            )
 
         # Get variable positions and bound args
         var_positions = query.get_variables()
@@ -204,6 +242,82 @@ class VSAREngine:
             results=results,
             trace_id=trace_id,
         )
+
+    def apply_rule(self, rule: Rule, k: int | None = None) -> int:
+        """Apply a rule to derive new facts using beam search joins.
+
+        Supports both single-body and multi-body rules. Uses beam search to
+        manage combinatorial explosion in joins.
+
+        Args:
+            rule: Rule to apply
+            k: Number of results to retrieve per query (default: 10)
+
+        Returns:
+            Number of derived facts added
+
+        Example:
+            >>> # Single-body: rule human(X) :- person(X).
+            >>> # Multi-body: rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+        """
+        if k is None:
+            k = 10
+
+        if len(rule.body) == 0:
+            # No body atoms - can't derive anything
+            return 0
+
+        # Check if all body predicates exist in KB
+        for body_atom in rule.body:
+            if not self.kb.has_predicate(body_atom.predicate):
+                # Missing predicate - no derivations possible
+                return 0
+
+        # Start with first body atom
+        try:
+            candidates = initial_candidates_from_atom(rule.body[0], self.query, k=k, kb=self.kb)
+        except ValueError:
+            # First atom has unsupported structure
+            return 0
+
+        # Join with remaining body atoms
+        for body_atom in rule.body[1:]:
+            candidates = join_with_atom(
+                candidates,
+                body_atom,
+                self.query,
+                beam_width=self.beam_width,
+                k=k,
+            )
+
+            if not candidates:
+                # No candidates left after join - no derivations
+                return 0
+
+        # Apply final bindings to head and insert derived facts
+        derived_count = 0
+        for candidate in candidates:
+            # Apply substitution to head
+            ground_head = candidate.substitution.apply_to_atom(rule.head)
+
+            # Check if head is fully ground
+            if not ground_head.is_ground():
+                # Head still has unbound variables - skip
+                continue
+
+            # Novelty check: avoid inserting duplicate derived facts
+            atom_vec = self.encoder.encode_atom(ground_head.predicate, ground_head.args)
+            if self.kb.contains_similar(
+                ground_head.predicate, atom_vec, threshold=self.novelty_threshold
+            ):
+                # Fact already exists (similar enough) - skip
+                continue
+
+            # Insert derived fact (novel)
+            self.insert_fact(Fact(predicate=ground_head.predicate, args=ground_head.args))
+            derived_count += 1
+
+        return derived_count
 
     def stats(self) -> dict[str, Any]:
         """Get knowledge base statistics.

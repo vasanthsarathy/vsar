@@ -5,6 +5,7 @@ start: statement*
 
 statement: directive
          | fact
+         | rule
          | query
 
 // Directives: @model FHRR(dim=8192, seed=1); or @threshold(value=0.22);
@@ -15,6 +16,10 @@ value: NUMBER | STRING | IDENTIFIER | TRUE | FALSE
 
 // Facts: fact parent(alice, bob).
 fact: "fact" atom "."
+
+// Rules: rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+rule: "rule" atom ":-" body "."
+body: atom ("," atom)*
 
 // Queries: query parent(alice, X)?
 query: "query" atom "?"

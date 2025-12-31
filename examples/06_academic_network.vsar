@@ -1,0 +1,40 @@
+// Example 6: Academic Network with Multiple Rule Types
+// Demonstrates complex multi-rule scenarios with different patterns
+
+// Configuration
+@model FHRR(dim=1024, seed=42);
+@beam 100;
+@novelty 0.95;
+
+// Base facts: Academic relationships
+// Advisor-student relationships
+fact advises(prof_smith, phd_alice).
+fact advises(phd_alice, ms_bob).
+fact advises(prof_jones, phd_carol).
+fact advises(phd_carol, ms_dave).
+
+// Collaboration relationships
+fact coauthor(prof_smith, prof_jones).
+fact coauthor(phd_alice, phd_carol).
+
+// Rules: Academic lineage and collaboration networks
+
+// Academic ancestor (transitive advising)
+rule academic_ancestor(X, Y) :- advises(X, Y).
+rule academic_ancestor(X, Z) :- advises(X, Y), academic_ancestor(Y, Z).
+
+// Symmetric coauthorship (if X coauthors with Y, then Y coauthors with X)
+rule coauthor(Y, X) :- coauthor(X, Y).
+
+// Collaboration network (transitive coauthorship)
+rule collaborator(X, Y) :- coauthor(X, Y).
+rule collaborator(X, Z) :- coauthor(X, Y), collaborator(Y, Z).
+
+// Academic siblings (share same advisor)
+rule academic_sibling(X, Y) :- advises(Z, X), advises(Z, Y).
+
+// Queries
+query academic_ancestor(prof_smith, ?)?   // Prof Smith's academic descendants
+query collaborator(prof_smith, ?)?        // Prof Smith's collaboration network
+query academic_sibling(phd_alice, ?)?     // PhD Alice's academic siblings
+query coauthor(prof_jones, ?)?            // Prof Jones's coauthors (symmetric)

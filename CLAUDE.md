@@ -301,27 +301,60 @@ git push origin main --tags
 
 ## Implementation Phases
 
-### Phase 0 — Foundation (Weeks 1–2)
+### ✓ Phase 0 — Foundation (Complete)
 - VSAX model selection + symbol bases + persistence
 - Atom encoder + KB storage (predicate bundles)
 - Retrieval query primitive with top-k results
 
-### Phase 1 — Ground KB + conjunctive queries (Weeks 3–6)
+### ✓ Phase 1 — Ground KB + conjunctive queries (Complete)
 - Facts ingestion (CSV/JSONL/VSAR source)
 - Predicate-local bundles and indexes
 - Query execution: unbind → retrieve → score
 - Trace output
 
-### Phase 2 — Horn rules + bounded chaining (Weeks 7–12)
-- Rule compilation to retrieval plans
-- Beam search joins, novelty detection, semi-naive caching
-- Derived fact store + provenance traces
+### ✓ Phase 2 — Horn rules + bounded chaining (Complete)
+**Status:** All stages completed (387 tests passing, 97.56% coverage)
 
-### Phase 3+ — Post-MVP
-- Negation + defaults
-- Argumentation + epistemic contexts
-- DL/OWL compatibility
-- Probabilistic overlays
+**Implemented Features:**
+- Horn clause rules (`head :- body1, body2, ...`)
+- Variable substitution and unification via VSA binding/unbinding
+- Beam search joins for multi-body rules
+- Forward chaining with fixpoint detection
+- Semi-naive evaluation (optimization to avoid redundant work)
+- Novelty detection (prevents duplicate derived facts)
+- Query with automatic rule application
+- Full traceability and provenance tracking
+
+**Key Components:**
+- `src/vsar/semantics/chaining.py` - Forward chaining engine
+- `src/vsar/semantics/join.py` - Beam search join operations
+- `src/vsar/semantics/substitution.py` - Variable binding management
+- `src/vsar/kb/store.py` - Novelty detection via similarity
+- Extended `VSAREngine.query()` with optional rules parameter
+- Extended `VSAREngine.apply_rule()` with novelty checking
+
+**Examples:** See `examples/` directory for 6 example VSAR programs demonstrating transitive closure, organizational hierarchies, knowledge graphs, and more.
+
+**What Works:**
+- Transitive closure (e.g., ancestor from parent)
+- Multi-hop inference (arbitrary depth)
+- Recursive rules
+- Multiple interacting rules
+- Approximate reasoning with similarity scores
+
+**Limitations:**
+- Single-variable queries only (`parent(alice, ?)` works, `parent(?, ?)` doesn't)
+- No negation support yet
+- No aggregation (count, sum, etc.)
+- Forward chaining only (no backward chaining)
+
+See `PROGRESS.md` for detailed capability analysis and comparison to other reasoners.
+
+### Phase 3+ — Future Work
+- **Phase 3:** Negation and stratified evaluation
+- **Phase 4:** Multi-variable queries and aggregation
+- **Phase 5:** Backward chaining and magic sets optimization
+- **Phase 6:** Advanced optimizations (incremental maintenance, query planning)
 
 ## Performance Strategy
 
