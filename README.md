@@ -31,6 +31,7 @@ VSAR (VSAX Reasoner) is a **VSA-grounded reasoning system** that combines Datalo
 - **HDF5 persistence** - Save and load knowledge bases
 
 ### Developer Experience
+- **VSAR IDE** - Complete visual development environment (like DrRacket for VSAR)
 - **VSARL language** - Declarative syntax for facts, queries, and rules
 - **Interactive REPL** - Load files and query interactively
 - **CLI interface** - Simple commands for ingestion, querying, and export
@@ -191,6 +192,47 @@ Predicates: parent (3 facts)
 > exit
 Goodbye!
 ```
+
+## 🎨 VSAR IDE - Interactive Development Environment
+
+VSAR includes a complete visual IDE (similar to DrRacket) for an enhanced development experience.
+
+### Launch the IDE
+
+```bash
+vsar-ide
+```
+
+### IDE Features
+
+**Visual Interface:**
+- **Split-pane layout** - Editor (left) + Console (right)
+- **Syntax highlighting** - Real-time color-coding for VSARL
+  - Keywords (`fact`, `rule`, `query`) in blue
+  - Directives (`@model`, `@beam`) in purple
+  - Comments (`//`, `/* */`) in gray
+  - Variables (uppercase) in orange
+  - Predicates (lowercase) in black
+
+**Development Workflow:**
+- **File operations** - New (Ctrl+N), Open (Ctrl+O), Save (Ctrl+S), Save As (Ctrl+Shift+S)
+- **Run programs** - Press F5 to execute entire programs
+- **Interactive queries** - Ctrl+Q to run queries on-demand
+- **KB statistics** - View facts and predicate breakdowns
+- **Color-coded output** - Errors, successes, and warnings clearly marked
+
+**Quick Start with IDE:**
+1. Launch `vsar-ide`
+2. Create a new file or open an example
+3. Write your VSAR program
+4. Press F5 to run
+5. Use Ctrl+Q for interactive queries
+
+**Perfect for:**
+- Learning VSAR and experimenting
+- Developing and testing programs
+- Debugging with visual feedback
+- Teaching and demonstrations
 
 ## 📚 Documentation
 
