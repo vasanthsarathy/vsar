@@ -22,8 +22,8 @@ class TestConsole:
         print(f"[{tag or 'NONE'}] {text}")
 
 
-def test_example(example_path: Path, console: TestConsole) -> bool:
-    """Test an example program.
+def _test_single_example(example_path: Path, console: TestConsole) -> bool:
+    """Test an example program (helper function).
 
     Args:
         example_path: Path to example file
@@ -165,7 +165,7 @@ def main():
     # Test each example
     results = {}
     for example_path in example_files:
-        success = test_example(example_path, console)
+        success = _test_single_example(example_path, console)
         results[example_path.name] = success
 
     # Test syntax highlighting
