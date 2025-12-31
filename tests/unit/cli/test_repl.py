@@ -69,7 +69,7 @@ fact parent(bob, carol).
         """Test querying without loading a file first."""
         result = runner.invoke(app, ["repl"], input="query parent(alice, X)?\nexit\n")
         assert result.exit_code == 0
-        assert "Error" in result.stdout
+        assert "[ERROR]" in result.stdout or "Error" in result.stdout
         assert "No program loaded" in result.stdout
 
     def test_repl_query_after_load(self, runner, family_vsar):
@@ -85,7 +85,7 @@ fact parent(bob, carol).
         """Test stats without loading a file first."""
         result = runner.invoke(app, ["repl"], input="stats\nexit\n")
         assert result.exit_code == 0
-        assert "Error" in result.stdout
+        assert "[ERROR]" in result.stdout or "Error" in result.stdout
         assert "No program loaded" in result.stdout
 
     def test_repl_stats_after_load(self, runner, family_vsar):
