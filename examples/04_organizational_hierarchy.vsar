@@ -27,6 +27,6 @@ rule reports_to(X, Y) :- manages(Y, X).
 rule reports_to(X, Z) :- manages(Y, X), reports_to(Y, Z).
 
 // Queries
-query reports_to(dev_alice, ?)?    // Who does Alice report to (all levels)?
-query reports_to(?, ceo)?          // Who reports to the CEO (all levels)?
-query manages(mgr_api, ?)?         // Who does the API manager directly manage?
+query reports_to(dev_alice, X)?    // Who does Alice report to (all levels)?
+query reports_to(X, ceo)?          // Who reports to the CEO (all levels)?
+query manages(mgr_api, X)?         // Who does the API manager directly manage?

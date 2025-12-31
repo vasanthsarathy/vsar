@@ -21,6 +21,6 @@ rule ancestor(X, Y) :- parent(X, Y).
 rule ancestor(X, Z) :- parent(X, Y), ancestor(Y, Z).
 
 // Queries
-query ancestor(alice, ?)?   // All of Alice's descendants
-query ancestor(?, eve)?     // All of Eve's ancestors
-query parent(alice, ?)?     // Just Alice's direct children
+query ancestor(alice, X)?   // All of Alice's descendants
+query ancestor(X, eve)?     // All of Eve's ancestors
+query parent(alice, X)?     // Just Alice's direct children

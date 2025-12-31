@@ -18,6 +18,6 @@ fact parent(carol, frank).
 rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
 
 // Queries
-query grandparent(alice, ?)?      // Alice's grandchildren
-query grandparent(?, dave)?       // Dave's grandparents
-query parent(alice, ?)?           // Alice's children (base facts)
+query grandparent(alice, X)?      // Alice's grandchildren
+query grandparent(X, dave)?       // Dave's grandparents
+query parent(alice, X)?           // Alice's children (base facts)

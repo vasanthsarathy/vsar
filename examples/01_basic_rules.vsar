@@ -15,4 +15,4 @@ fact person(carol).
 rule human(X) :- person(X).
 
 // Query: Who are the humans?
-query human(?)?
+query human(X)?

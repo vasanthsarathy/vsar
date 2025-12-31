@@ -28,6 +28,6 @@ rule connected(X, Y) :- works_with(X, Y).
 rule connected(X, Z) :- connected(X, Y), connected(Y, Z).
 
 // Queries
-query connected(alice, ?)?   // Who is Alice connected to (all paths)?
-query knows(alice, ?)?       // Who does Alice know (direct)?
-query works_with(alice, ?)?  // Who does Alice work with (direct)?
+query connected(alice, X)?   // Who is Alice connected to (all paths)?
+query knows(alice, X)?       // Who does Alice know (direct)?
+query works_with(alice, X)?  // Who does Alice work with (direct)?

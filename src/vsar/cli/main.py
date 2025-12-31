@@ -72,7 +72,8 @@ def run(
     results = []
     for query in program.queries:
         try:
-            result = engine.query(query, k=k)
+            # Pass rules to query if program has rules
+            result = engine.query(query, rules=program.rules if program.rules else None, k=k)
             results.append(result)
         except Exception as e:
             console.print(f"[red]Error executing query {query}: {e}[/red]")
