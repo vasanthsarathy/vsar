@@ -5,6 +5,17 @@ All notable changes to VSAR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2025-12-31
+
+### Fixed
+
+- **Test suite compatibility**
+  - Updated `test_formatters.py` to accommodate formatters printing directly instead of returning strings
+  - Updated `test_repl.py` to check for new `[ERROR]` format in assertions
+  - All 392 tests now pass with 97.48% coverage
+
+**Impact:** Ensures CI/CD pipeline passes and v0.3.2 console improvements can be published.
+
 ## [0.3.2] - 2025-12-31
 
 ### Added
