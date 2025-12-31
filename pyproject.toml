@@ -92,6 +92,9 @@ omit = [
     "*/types.py",  # Type definitions don't need coverage
     "*/version.py",  # Version string doesn't need coverage
     "*/cli/main.py",  # CLI argument parsing (tested via integration)
+    "*/ide/main.py",  # GUI code (tested manually)
+    "*/ide/highlighter.py",  # GUI code (tested manually)
+    "*/ide/runner.py",  # GUI code (tested manually)
 ]
 
 [tool.coverage.report]

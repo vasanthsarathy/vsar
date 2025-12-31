@@ -10,7 +10,7 @@ from vsar.ide.highlighter import VSARLHighlighter
 import tkinter as tk
 
 
-class TestConsole:
+class MockConsole:
     """Mock console for testing."""
 
     def __init__(self):
@@ -22,7 +22,7 @@ class TestConsole:
         print(f"[{tag or 'NONE'}] {text}")
 
 
-def _test_single_example(example_path: Path, console: TestConsole) -> bool:
+def _test_single_example(example_path: Path, console: MockConsole) -> bool:
     """Test an example program (helper function).
 
     Args:
@@ -94,9 +94,13 @@ def test_syntax_highlighting():
     print("Testing Syntax Highlighting")
     print(f"{'='*60}")
 
-    # Create a temporary Text widget
-    root = tk.Tk()
-    root.withdraw()  # Hide the window
+    # Skip if no display available (CI environment)
+    try:
+        root = tk.Tk()
+        root.withdraw()  # Hide the window
+    except tk.TclError:
+        print("[SKIP] No display available - skipping GUI test")
+        return True
 
     text_widget = tk.Text(root)
     highlighter = VSARLHighlighter(text_widget)
@@ -160,7 +164,7 @@ def main():
         print(f"  - {f.name}")
 
     # Test console
-    console = TestConsole()
+    console = MockConsole()
 
     # Test each example
     results = {}
