@@ -10,18 +10,15 @@ from vsar.semantics.engine import QueryResult
 from vsar.trace.collector import TraceCollector
 
 
-def format_results_table(results: list[QueryResult]) -> str:
-    """Format query results as a rich table.
+def format_results_table(results: list[QueryResult]) -> None:
+    """Format and print query results as rich tables.
 
     Args:
         results: List of query results
 
-    Returns:
-        Formatted table string
-
     Example:
         >>> result = QueryResult(...)
-        >>> output = format_results_table([result])
+        >>> format_results_table([result])
     """
     console = Console()
 
@@ -30,21 +27,33 @@ def format_results_table(results: list[QueryResult]) -> str:
             console.print()  # Blank line between queries
 
         # Create table for this query
-        table = Table(title=f"Query: {_format_query(result.query)}")
-        table.add_column("Entity", style="cyan")
-        table.add_column("Score", style="green")
+        table = Table(
+            title=f"[bold cyan]Query:[/bold cyan] [yellow]{_format_query(result.query)}[/yellow]",
+            show_header=True,
+            header_style="bold magenta",
+            border_style="blue",
+        )
+        table.add_column("Entity", style="cyan", no_wrap=True)
+        table.add_column("Score", justify="right", style="green")
 
         # Add rows
-        for entity, score in result.results:
-            table.add_row(entity, f"{score:.4f}")
+        if not result.results:
+            table.add_row("[dim]No results[/dim]", "[dim]-[/dim]")
+        else:
+            for entity, score in result.results:
+                # Color code scores
+                if score >= 0.9:
+                    score_style = "bold green"
+                elif score >= 0.7:
+                    score_style = "green"
+                elif score >= 0.5:
+                    score_style = "yellow"
+                else:
+                    score_style = "red"
 
-        # Capture output
-        with console.capture() as capture:
-            console.print(table)
+                table.add_row(entity, f"[{score_style}]{score:.4f}[/{score_style}]")
 
-        return capture.get()
-
-    return ""
+        console.print(table)
 
 
 def format_results_json(results: list[QueryResult]) -> str:
@@ -125,44 +134,49 @@ def format_trace_dag(trace: TraceCollector, event_id: str | None = None) -> str:
     return capture.get()
 
 
-def format_stats(stats: dict[str, Any]) -> str:
-    """Format KB statistics as a table.
+def format_stats(stats: dict[str, Any]) -> None:
+    """Format and print KB statistics as tables.
 
     Args:
         stats: Statistics dictionary
 
-    Returns:
-        Formatted table string
-
     Example:
         >>> stats = {"total_facts": 100, "predicates": {...}}
-        >>> output = format_stats(stats)
+        >>> format_stats(stats)
     """
     console = Console()
 
     # Create summary table
-    summary = Table(title="Knowledge Base Statistics")
-    summary.add_column("Metric", style="cyan")
-    summary.add_column("Value", style="green")
+    summary = Table(
+        title="[bold cyan]Knowledge Base Statistics[/bold cyan]",
+        show_header=True,
+        header_style="bold magenta",
+        border_style="blue",
+    )
+    summary.add_column("Metric", style="cyan", no_wrap=True)
+    summary.add_column("Value", justify="right", style="green")
 
-    summary.add_row("Total Facts", str(stats["total_facts"]))
-    summary.add_row("Predicates", str(len(stats["predicates"])))
+    summary.add_row("Total Facts", f"[bold]{stats['total_facts']}[/bold]")
+    summary.add_row("Predicates", f"[bold]{len(stats['predicates'])}[/bold]")
 
-    # Create predicate details table
-    details = Table(title="Predicate Details")
-    details.add_column("Predicate", style="yellow")
-    details.add_column("Fact Count", style="green")
+    console.print(summary)
 
-    for predicate, count in sorted(stats["predicates"].items()):
-        details.add_row(predicate, str(count))
-
-    # Capture output
-    with console.capture() as capture:
-        console.print(summary)
+    # Create predicate details table if there are predicates
+    if stats["predicates"]:
         console.print()
-        console.print(details)
+        details = Table(
+            title="[bold cyan]Predicate Details[/bold cyan]",
+            show_header=True,
+            header_style="bold magenta",
+            border_style="blue",
+        )
+        details.add_column("Predicate", style="yellow", no_wrap=True)
+        details.add_column("Facts", justify="right", style="green")
 
-    return capture.get()
+        for predicate, count in sorted(stats["predicates"].items()):
+            details.add_row(predicate, str(count))
+
+        console.print(details)
 
 
 def _format_query(query: Any) -> str:

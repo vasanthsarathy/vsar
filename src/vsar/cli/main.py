@@ -41,42 +41,54 @@ def run(
         vsar run program.vsar --json
         vsar run program.vsar --trace
     """
-    # Load program
-    try:
-        program = load_vsar(program_path)
-    except FileNotFoundError as e:
-        console.print(f"[red]{e}[/red]")
-        raise typer.Exit(code=1)
-    except Exception as e:
-        console.print(f"[red]Error parsing program: {e}[/red]")
-        raise typer.Exit(code=1)
+    # Load program with status
+    with console.status("[bold blue]Loading program...", spinner="dots"):
+        try:
+            program = load_vsar(program_path)
+        except FileNotFoundError as e:
+            console.print(f"[red][ERROR][/red] {e}")
+            raise typer.Exit(code=1)
+        except Exception as e:
+            console.print(f"[red][ERROR][/red] Error parsing program: {e}")
+            raise typer.Exit(code=1)
+
+    console.print(f"[green][OK][/green] Loaded [cyan]{program_path.name}[/cyan]")
 
     # Create engine
     try:
-        engine = VSAREngine(program.directives)
+        with console.status("[bold blue]Initializing engine...", spinner="dots"):
+            engine = VSAREngine(program.directives)
     except Exception as e:
-        console.print(f"[red]Error initializing engine: {e}[/red]")
+        console.print(f"[red][ERROR][/red] Error initializing engine: {e}")
         raise typer.Exit(code=1)
 
-    # Insert facts
-    for fact in program.facts:
-        engine.insert_fact(fact)
+    # Insert facts with progress
+    if program.facts:
+        with console.status(f"[bold blue]Inserting {len(program.facts)} facts...", spinner="dots"):
+            for fact in program.facts:
+                engine.insert_fact(fact)
+        console.print(f"[green][OK][/green] Inserted [cyan]{len(program.facts)}[/cyan] facts")
 
-    console.print(f"[green]Inserted {len(program.facts)} facts[/green]")
+    # Show rules info if present
+    if program.rules:
+        console.print(f"[blue][INFO][/blue] Found [cyan]{len(program.rules)}[/cyan] rules")
 
     # Execute queries
     if not program.queries:
-        console.print("[yellow]No queries to execute[/yellow]")
+        console.print("[yellow][WARN][/yellow] No queries to execute")
         return
 
+    console.print()  # Blank line before results
+
     results = []
-    for query in program.queries:
+    for i, query in enumerate(program.queries, 1):
         try:
             # Pass rules to query if program has rules
-            result = engine.query(query, rules=program.rules if program.rules else None, k=k)
+            with console.status(f"[bold blue]Executing query {i}/{len(program.queries)}...", spinner="dots"):
+                result = engine.query(query, rules=program.rules if program.rules else None, k=k)
             results.append(result)
         except Exception as e:
-            console.print(f"[red]Error executing query {query}: {e}[/red]")
+            console.print(f"[red][ERROR][/red] Error executing query: {e}")
             raise typer.Exit(code=1)
 
     # Format output
@@ -84,8 +96,7 @@ def run(
         output = format_results_json(results)
         console.print(output)
     else:
-        output = format_results_table(results)
-        console.print(output)
+        format_results_table(results)
 
     # Show trace if requested
     if show_trace:
@@ -149,8 +160,7 @@ def ingest(
 
     # Show stats
     stats = engine.stats()
-    output = format_stats(stats)
-    console.print(output)
+    format_stats(stats)
 
 
 @app.command()
@@ -231,8 +241,7 @@ def inspect(
 
     # Show stats
     stats = engine.stats()
-    output = format_stats(stats)
-    console.print(output)
+    format_stats(stats)
 
 
 @app.command()
@@ -248,8 +257,16 @@ def repl() -> None:
         > stats
         > exit
     """
-    console.print("[bold cyan]VSAR Interactive REPL[/bold cyan]")
-    console.print("Type 'help' for commands, 'exit' to quit\n")
+    from rich.panel import Panel
+
+    console.print(
+        Panel(
+            "[bold cyan]VSAR Interactive REPL[/bold cyan]\n"
+            "Type [yellow]help[/yellow] for commands, [yellow]exit[/yellow] to quit",
+            border_style="cyan",
+        )
+    )
+    console.print()
 
     engine = None
     program = None
@@ -257,7 +274,7 @@ def repl() -> None:
     while True:
         try:
             # Read input
-            user_input = console.input("[bold green]> [/bold green]").strip()
+            user_input = console.input("[bold cyan]vsar>[/bold cyan] ").strip()
 
             if not user_input:
                 continue
@@ -268,49 +285,58 @@ def repl() -> None:
 
             # Handle commands
             if command in ["exit", "quit"]:
-                console.print("[yellow]Goodbye![/yellow]")
+                console.print("[bold green]Goodbye![/bold green]")
                 break
 
             elif command == "help":
-                console.print("\n[bold]Available Commands:[/bold]")
-                console.print("  [cyan]load <file>[/cyan]        Load a VSAR program file")
-                console.print(
-                    "  [cyan]query <query>[/cyan]      Execute a query (e.g., parent(alice, X)?)"
+                console.print()
+                help_panel = Panel(
+                    "[bold]Available Commands:[/bold]\n\n"
+                    "  [cyan]load[/cyan] [yellow]<file>[/yellow]      Load a VSAR program file\n"
+                    "  [cyan]query[/cyan] [yellow]<query>[/yellow]    Execute a query (e.g., parent(alice, X)?)\n"
+                    "  [cyan]stats[/cyan]             Show knowledge base statistics\n"
+                    "  [cyan]help[/cyan]              Show this help message\n"
+                    "  [cyan]exit[/cyan] / [cyan]quit[/cyan]        Exit REPL",
+                    title="[bold]Help[/bold]",
+                    border_style="blue",
                 )
-                console.print("  [cyan]stats[/cyan]              Show knowledge base statistics")
-                console.print("  [cyan]help[/cyan]               Show this help message")
-                console.print("  [cyan]exit[/cyan] or [cyan]quit[/cyan]      Exit REPL\n")
+                console.print(help_panel)
+                console.print()
 
             elif command == "load":
                 if len(parts) < 2:
-                    console.print("[red]Error: Usage: load <file>[/red]")
+                    console.print("[red][ERROR][/red] Usage: [cyan]load[/cyan] [yellow]<file>[/yellow]")
                     continue
 
                 file_path = Path(parts[1])
                 try:
-                    program = load_vsar(file_path)
-                    engine = VSAREngine(program.directives)
+                    with console.status("[blue]Loading program...", spinner="dots"):
+                        program = load_vsar(file_path)
+                        engine = VSAREngine(program.directives)
 
-                    # Insert facts
-                    for fact in program.facts:
-                        engine.insert_fact(fact)
+                        # Insert facts
+                        for fact in program.facts:
+                            engine.insert_fact(fact)
 
-                    console.print(f"[green]Loaded {file_path}[/green]")
-                    console.print(f"[green]Inserted {len(program.facts)} facts[/green]")
+                    console.print(f"[green][OK][/green] Loaded [cyan]{file_path}[/cyan]")
+                    console.print(f"[green][OK][/green] Inserted [cyan]{len(program.facts)}[/cyan] facts")
+
+                    if program.rules:
+                        console.print(f"[blue][INFO][/blue] Found [cyan]{len(program.rules)}[/cyan] rules")
 
                 except FileNotFoundError as e:
-                    console.print(f"[red]{e}[/red]")
+                    console.print(f"[red][ERROR][/red] {e}")
                 except Exception as e:
-                    console.print(f"[red]Error loading file: {e}[/red]")
+                    console.print(f"[red][ERROR][/red] Error loading file: {e}")
 
             elif command == "query":
                 if engine is None:
-                    console.print("[red]Error: No program loaded. Use 'load <file>' first[/red]")
+                    console.print("[red][ERROR][/red] No program loaded. Use [cyan]load <file>[/cyan] first")
                     continue
 
                 if len(parts) < 2:
-                    console.print("[red]Error: Usage: query <query>[/red]")
-                    console.print("[yellow]Example: query parent(alice, X)?[/yellow]")
+                    console.print("[red][ERROR][/red] Usage: [cyan]query[/cyan] [yellow]<query>[/yellow]")
+                    console.print("[dim]Example: query parent(alice, X)?[/dim]")
                     continue
 
                 query_text = parts[1].strip()
@@ -324,45 +350,52 @@ def repl() -> None:
                     parsed_program = parse(program_text)
 
                     if not parsed_program.queries:
-                        console.print("[red]Error: Invalid query syntax[/red]")
+                        console.print("[red][ERROR][/red] Invalid query syntax")
                         continue
 
                     query = parsed_program.queries[0]
 
-                    # Execute query
-                    result = engine.query(query, k=10)
+                    # Execute query with rules if available
+                    with console.status("[blue]Executing query...", spinner="dots"):
+                        result = engine.query(
+                            query,
+                            rules=program.rules if program and program.rules else None,
+                            k=10
+                        )
 
                     # Display results
+                    console.print()
                     if result.results:
-                        output = format_results_table([result])
-                        console.print(output)
+                        format_results_table([result])
                     else:
-                        console.print("[yellow]No results found[/yellow]")
+                        console.print("[yellow][WARN][/yellow] No results found")
+                    console.print()
 
                 except Exception as e:
-                    console.print(f"[red]Error executing query: {e}[/red]")
+                    console.print(f"[red][ERROR][/red] Error executing query: {e}")
 
             elif command == "stats":
                 if engine is None:
-                    console.print("[red]Error: No program loaded. Use 'load <file>' first[/red]")
+                    console.print("[red][ERROR][/red] No program loaded. Use [cyan]load <file>[/cyan] first")
                     continue
 
+                console.print()
                 stats = engine.stats()
-                output = format_stats(stats)
-                console.print(output)
+                format_stats(stats)
+                console.print()
 
             else:
-                console.print(f"[red]Unknown command: {command}[/red]")
-                console.print("[yellow]Type 'help' for available commands[/yellow]")
+                console.print(f"[red][ERROR][/red] Unknown command: [yellow]{command}[/yellow]")
+                console.print("[dim]Type [cyan]help[/cyan] for available commands[/dim]")
 
         except KeyboardInterrupt:
-            console.print("\n[yellow]Use 'exit' to quit[/yellow]")
+            console.print("\n[yellow][WARN][/yellow] Use [cyan]exit[/cyan] to quit")
             continue
         except EOFError:
-            console.print("\n[yellow]Goodbye![/yellow]")
+            console.print("\n[bold green]Goodbye![/bold green]")
             break
         except Exception as e:
-            console.print(f"[red]Error: {e}[/red]")
+            console.print(f"[red][ERROR][/red] Error: {e}")
             continue
 
 
