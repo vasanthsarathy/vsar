@@ -5,6 +5,45 @@ All notable changes to VSAR will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2025-12-31
+
+### Added
+
+- **Progress indicators with spinners**
+  - Loading programs shows animated spinner
+  - Inserting facts shows progress
+  - Executing queries shows progress with count (e.g., "Executing query 1/3...")
+
+- **Enhanced visual feedback**
+  - Color-coded status indicators: `[OK]`, `[ERROR]`, `[INFO]`, `[WARN]`
+  - Color-coded scores in results (green for high confidence, yellow/red for lower)
+  - Better table borders and styling
+  - Improved REPL with welcome panel and better prompts
+
+### Fixed
+
+- **Critical bug in result display**
+  - Fixed early return in `format_results_table()` that only showed first query result
+  - All query results now display correctly
+
+- **Formatter architecture**
+  - Changed formatters to print directly instead of returning strings
+  - Fixes multiple display issues and improves performance
+
+### Changed
+
+- **Improved REPL experience**
+  - New prompt style: `vsar>` instead of plain `>`
+  - Welcome message in formatted panel
+  - Help command shows formatted panel with all commands
+  - Better error messages and user guidance
+
+- **Cross-platform compatibility**
+  - Uses ASCII symbols `[OK]`, `[ERROR]`, etc. instead of Unicode
+  - Works correctly on Windows, Linux, and macOS consoles
+
+**Impact:** Much better user experience with clearer feedback and no Unicode errors on Windows.
+
 ## [0.3.1] - 2025-12-31
 
 ### Fixed
