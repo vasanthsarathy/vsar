@@ -1,12 +1,10 @@
 """Unit tests for knowledge base persistence."""
 
-import jax
-
 from pathlib import Path
 
+import jax
 import jax.numpy as jnp
 import pytest
-
 from vsar.kb.persistence import load_kb, save_kb
 from vsar.kb.store import KnowledgeBase
 from vsar.kernel.vsa_backend import FHRRBackend
@@ -26,9 +24,9 @@ class TestKBPersistence:
         kb = KnowledgeBase(backend)
 
         # Add some facts
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec3 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec3 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
         kb.insert("parent", vec2, ("bob", "carol"))
@@ -104,7 +102,7 @@ class TestKBPersistence:
         assert len(original_parent_vectors) > 0
         assert len(loaded_parent_vectors) > 0
         assert len(original_parent_vectors) == len(loaded_parent_vectors)
-        for orig, loaded in zip(original_parent_vectors, loaded_parent_vectors):
+        for orig, loaded in zip(original_parent_vectors, loaded_parent_vectors, strict=False):
             assert jnp.allclose(loaded, orig)
 
         original_sibling_vectors = kb_with_facts.get_vectors("sibling")
@@ -112,7 +110,7 @@ class TestKBPersistence:
         assert len(original_sibling_vectors) > 0
         assert len(loaded_sibling_vectors) > 0
         assert len(original_sibling_vectors) == len(loaded_sibling_vectors)
-        for orig, loaded in zip(original_sibling_vectors, loaded_sibling_vectors):
+        for orig, loaded in zip(original_sibling_vectors, loaded_sibling_vectors, strict=False):
             assert jnp.allclose(loaded, orig)
 
     def test_save_empty_kb(self, backend: FHRRBackend, temp_file: Path) -> None:
