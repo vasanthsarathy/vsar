@@ -27,7 +27,7 @@ class TestUnbindOperations:
     @pytest.fixture
     def registry(self, backend: FHRRBackend) -> SymbolRegistry:
         """Create test registry."""
-        return SymbolRegistry(backend, seed=42)
+        return SymbolRegistry(dim=backend.dimension, seed=42)
 
     @pytest.fixture
     def encoder(self, backend: FHRRBackend, registry: SymbolRegistry) -> VSAEncoder:
@@ -58,7 +58,7 @@ class TestUnbindOperations:
         """Test unbinding role vector."""
         # Create role-filler binding
         role1 = role_manager.get_role(1)
-        entity_vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        entity_vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
         entity_vec = backend.normalize(entity_vec)
 
         # Bind role to entity
@@ -105,8 +105,8 @@ class TestUnbindOperations:
 
     def test_unbind_preserves_normalization(self, backend: FHRRBackend) -> None:
         """Test that unbind operations preserve normalization."""
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimensionension,))
 
         vec1 = backend.normalize(vec1)
         vec2 = backend.normalize(vec2)

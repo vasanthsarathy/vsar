@@ -12,6 +12,8 @@
 - **Forward chaining** - Iterative rule application with fixpoint detection
 - **Transitive closure** - Multi-hop inference (arbitrary depth)
 - **Semi-naive evaluation** - Optimized chaining that avoids redundant work
+- **Negation support** - Classical negation (`~predicate`) and negation-as-failure (`not predicate`)
+- **Stratification analysis** - Automatic detection of non-stratified programs
 
 ### Approximate Matching
 - **VSA-based similarity** - Fuzzy matching with confidence scores instead of exact symbolic matching
@@ -30,7 +32,7 @@
 - **Interactive REPL** - Load files and query interactively
 - **CLI interface** - Simple commands for ingestion, querying, and export
 - **Full traceability** - Explanation DAG for debugging and transparency
-- **Comprehensive testing** - 392 tests with 97.56% coverage
+- **Comprehensive testing** - 446 tests with 97.82% coverage
 
 ## Quick Start
 
@@ -156,6 +158,7 @@ Fixpoint reached: true
 ### User Guides
 - **[Basic Usage](guides/basic-usage.md)** - Facts, queries, and programs
 - **[Rules & Chaining](guides/rules-and-chaining.md)** - Horn clauses and forward chaining
+- **[Negation Guide](guides/negation-guide.md)** - Classical negation and negation-as-failure
 - **[File Formats](guides/file-formats.md)** - CSV, JSONL, and VSAR formats
 - **[KB Management](guides/kb-management.md)** - Persistence and export
 - **[Python API](guides/python-api.md)** - Using VSAR programmatically
@@ -193,16 +196,22 @@ Fixpoint reached: true
 - Novelty detection
 - Query with automatic rule application
 
-**Stats:** 392 tests passing, 97.56% coverage
+### ✅ Phase 3: Negation Support (Complete)
+- Classical negation (`~predicate`) for explicit negative facts
+- Negation-as-failure (`not predicate`) in rule bodies
+- Stratification analysis and cycle detection
+- Paraconsistent logic (allows contradictions)
+- Warnings for non-stratified programs
 
-### 🔜 Phase 3: Advanced Features (Planned)
+**Stats:** 446 tests passing, 97.82% coverage
+
+### 🔜 Phase 4: Advanced Features (Planned)
 - Multi-variable queries (`parent(?, ?)?`)
-- Stratified negation
 - Aggregation (count, sum, max)
 - Backward chaining
 - Magic sets optimization
 
-### 🔜 Phase 4: Scale & Performance (Planned)
+### 🔜 Phase 5: Scale & Performance (Planned)
 - Incremental maintenance
 - Query planning and optimization
 - Parallel execution
@@ -235,10 +244,10 @@ See [Capabilities & Limitations](capabilities.md) for detailed status.
 
 **Not yet suitable for:**
 
-1. Complex logical puzzles requiring negation
-2. Planning problems (need backward chaining)
-3. Ontology reasoning (need DL features)
-4. Answer set programming tasks
+1. Planning problems (need backward chaining)
+2. Ontology reasoning (need DL features)
+3. Complex answer set programming (need choice rules, optimization)
+4. Real-time reasoning (optimization needed)
 
 ## Getting Help
 

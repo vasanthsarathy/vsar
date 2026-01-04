@@ -63,15 +63,54 @@ def run(
         raise typer.Exit(code=1)
 
     # Insert facts with progress
+    positive_facts = [f for f in program.facts if not f.negated]
+    negative_facts = [f for f in program.facts if f.negated]
+
     if program.facts:
         with console.status(f"[bold blue]Inserting {len(program.facts)} facts...", spinner="dots"):
             for fact in program.facts:
                 engine.insert_fact(fact)
-        console.print(f"[green][OK][/green] Inserted [cyan]{len(program.facts)}[/cyan] facts")
 
-    # Show rules info if present
+        if negative_facts:
+            console.print(
+                f"[green][OK][/green] Inserted [cyan]{len(positive_facts)}[/cyan] positive facts, "
+                f"[cyan]{len(negative_facts)}[/cyan] negative facts"
+            )
+        else:
+            console.print(f"[green][OK][/green] Inserted [cyan]{len(program.facts)}[/cyan] facts")
+
+    # Apply rules if present and show results
     if program.rules:
         console.print(f"[blue][INFO][/blue] Found [cyan]{len(program.rules)}[/cyan] rules")
+
+        # Apply forward chaining
+        from vsar.semantics.chaining import apply_rules
+        import warnings
+
+        # Capture warnings for stratification
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            with console.status("[bold blue]Applying rules (forward chaining)...", spinner="dots"):
+                chaining_result = apply_rules(engine, program.rules, max_iterations=100, k=10)
+
+            # Show stratification warnings
+            if w:
+                for warning in w:
+                    console.print(f"[yellow][WARN][/yellow] {warning.message}")
+
+        # Show chaining statistics
+        if chaining_result.total_derived > 0:
+            console.print(
+                f"[green][OK][/green] Applied rules in [cyan]{chaining_result.iterations}[/cyan] iterations, "
+                f"derived [cyan]{chaining_result.total_derived}[/cyan] new facts"
+            )
+            if chaining_result.fixpoint_reached:
+                console.print(f"[blue][INFO][/blue] Fixpoint reached")
+            elif chaining_result.max_iterations_reached:
+                console.print(f"[yellow][WARN][/yellow] Max iterations reached without fixpoint")
+        else:
+            console.print(f"[blue][INFO][/blue] No new facts derived from rules")
 
     # Execute queries
     if not program.queries:
@@ -83,9 +122,9 @@ def run(
     results = []
     for i, query in enumerate(program.queries, 1):
         try:
-            # Pass rules to query if program has rules
+            # Rules already applied via forward chaining, just query the KB
             with console.status(f"[bold blue]Executing query {i}/{len(program.queries)}...", spinner="dots"):
-                result = engine.query(query, rules=program.rules if program.rules else None, k=k)
+                result = engine.query(query, k=k)
             results.append(result)
         except Exception as e:
             console.print(f"[red][ERROR][/red] Error executing query: {e}")
@@ -319,10 +358,43 @@ def repl() -> None:
                             engine.insert_fact(fact)
 
                     console.print(f"[green][OK][/green] Loaded [cyan]{file_path}[/cyan]")
-                    console.print(f"[green][OK][/green] Inserted [cyan]{len(program.facts)}[/cyan] facts")
 
+                    # Count positive and negative facts
+                    positive_facts = [f for f in program.facts if not f.negated]
+                    negative_facts = [f for f in program.facts if f.negated]
+
+                    if negative_facts:
+                        console.print(
+                            f"[green][OK][/green] Inserted [cyan]{len(positive_facts)}[/cyan] positive facts, "
+                            f"[cyan]{len(negative_facts)}[/cyan] negative facts"
+                        )
+                    else:
+                        console.print(f"[green][OK][/green] Inserted [cyan]{len(program.facts)}[/cyan] facts")
+
+                    # Apply rules if present
                     if program.rules:
                         console.print(f"[blue][INFO][/blue] Found [cyan]{len(program.rules)}[/cyan] rules")
+
+                        from vsar.semantics.chaining import apply_rules
+                        import warnings
+
+                        with warnings.catch_warnings(record=True) as w:
+                            warnings.simplefilter("always")
+
+                            with console.status("[blue]Applying rules...", spinner="dots"):
+                                chaining_result = apply_rules(engine, program.rules, max_iterations=100, k=10)
+
+                            if w:
+                                for warning in w:
+                                    console.print(f"[yellow][WARN][/yellow] {warning.message}")
+
+                        if chaining_result.total_derived > 0:
+                            console.print(
+                                f"[green][OK][/green] Applied rules in [cyan]{chaining_result.iterations}[/cyan] iterations, "
+                                f"derived [cyan]{chaining_result.total_derived}[/cyan] new facts"
+                            )
+                        else:
+                            console.print(f"[blue][INFO][/blue] No new facts derived from rules")
 
                 except FileNotFoundError as e:
                     console.print(f"[red][ERROR][/red] {e}")
@@ -355,13 +427,9 @@ def repl() -> None:
 
                     query = parsed_program.queries[0]
 
-                    # Execute query with rules if available
+                    # Execute query (rules already applied during load)
                     with console.status("[blue]Executing query...", spinner="dots"):
-                        result = engine.query(
-                            query,
-                            rules=program.rules if program and program.rules else None,
-                            k=10
-                        )
+                        result = engine.query(query, k=10)
 
                     # Display results
                     console.print()

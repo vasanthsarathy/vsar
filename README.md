@@ -2,8 +2,8 @@
 
 [![PyPI version](https://badge.fury.io/py/vsar.svg)](https://badge.fury.io/py/vsar)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-392%20passing-brightgreen.svg)](https://github.com/vasanthsarathy/vsar)
-[![Coverage](https://img.shields.io/badge/coverage-97.56%25-brightgreen.svg)](https://github.com/vasanthsarathy/vsar)
+[![Tests](https://img.shields.io/badge/tests-446%20passing-brightgreen.svg)](https://github.com/vasanthsarathy/vsar)
+[![Coverage](https://img.shields.io/badge/coverage-97.82%25-brightgreen.svg)](https://github.com/vasanthsarathy/vsar)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 VSAR (VSAX Reasoner) is a **VSA-grounded reasoning system** that combines Datalog-style logic programming with approximate vector matching. Built on [VSAX library](https://vsarathy.com/vsax/) for GPU-accelerated hypervector operations, VSAR enables fast approximate reasoning over large knowledge bases with explainable results.
@@ -17,6 +17,8 @@ VSAR (VSAX Reasoner) is a **VSA-grounded reasoning system** that combines Datalo
 - **Forward chaining** - Iterative rule application with fixpoint detection
 - **Transitive closure** - Multi-hop inference (arbitrary depth)
 - **Semi-naive evaluation** - Optimized chaining that avoids redundant work
+- **Negation support** - Classical negation (`~predicate`) and negation-as-failure (`not predicate`)
+- **Stratification analysis** - Automatic detection of non-stratified programs with warnings
 
 ### Approximate Matching
 - **VSA-based similarity** - Fuzzy matching with confidence scores instead of exact symbolic matching
@@ -36,7 +38,7 @@ VSAR (VSAX Reasoner) is a **VSA-grounded reasoning system** that combines Datalo
 - **Interactive REPL** - Load files and query interactively
 - **CLI interface** - Simple commands for ingestion, querying, and export
 - **Full traceability** - Explanation DAG for debugging and transparency
-- **Comprehensive testing** - 392 tests with 97.56% coverage
+- **Comprehensive testing** - 446 tests with 97.82% coverage
 
 ## 📦 Installation
 
@@ -159,7 +161,87 @@ Fixpoint reached: true
 └────────┴──────────────────┘
 ```
 
-### Example 3: Interactive REPL
+### Example 3: Negation and Safety Analysis (Phase 3)
+
+Create `safety.vsar`:
+
+```prolog
+@model FHRR(dim=1024, seed=42);
+@beam(width=50);
+@novelty(threshold=0.95);
+
+// Positive facts: people and relationships
+fact person(alice).
+fact person(bob).
+fact person(carol).
+fact person(dave).
+
+fact enemy(bob, dave).
+fact criminal(dave).
+
+// Negative facts: explicit statements about what is NOT true
+fact ~criminal(alice).
+fact ~criminal(bob).
+fact ~enemy(alice, bob).
+
+// Rule: A person is safe if they have no enemies
+rule safe(X) :-
+    person(X),
+    not enemy(X, Y).
+
+// Rule: A person is trustworthy if they are safe and not a criminal
+rule trustworthy(X) :-
+    safe(X),
+    not criminal(X).
+
+// Queries
+query safe(X)?           // Who is safe?
+query trustworthy(X)?    // Who is trustworthy?
+query ~criminal(alice)?  // Check negative fact
+```
+
+Run it:
+
+```bash
+vsar run safety.vsar
+```
+
+Output:
+```
+Inserted 8 facts (4 positive, 4 negative)
+
+Applied 2 rules in 1 iteration
+Derived 3 new facts
+Fixpoint reached: true
+
+┌─────────────────┐
+│ Query: safe(X)  │
+├────────┬────────┤
+│ Entity │ Score  │
+├────────┼────────┤
+│ alice  │ 0.9012 │
+│ carol  │ 0.8954 │
+└────────┴────────┘
+
+┌──────────────────────┐
+│ Query: trustworthy(X)│
+├────────┬─────────────┤
+│ Entity │ Score       │
+├────────┼─────────────┤
+│ alice  │ 0.8876      │
+│ carol  │ 0.8754      │
+└────────┴─────────────┘
+
+┌──────────────────────────┐
+│ Query: ~criminal(alice)  │
+├────────┬─────────────────┤
+│ Result │ Match           │
+├────────┼─────────────────┤
+│ ✓      │ Exact fact      │
+└────────┴─────────────────┘
+```
+
+### Example 4: Interactive REPL
 
 ```bash
 vsar repl
@@ -208,8 +290,9 @@ vsar-ide
 **Visual Interface:**
 - **Split-pane layout** - Editor (left) + Console (right)
 - **Syntax highlighting** - Real-time color-coding for VSARL
-  - Keywords (`fact`, `rule`, `query`) in blue
+  - Keywords (`fact`, `rule`, `query`, `not`) in blue
   - Directives (`@model`, `@beam`) in purple
+  - Negation operators (`~`, `not`) in crimson (bold)
   - Comments (`//`, `/* */`) in gray
   - Variables (uppercase) in orange
   - Predicates (lowercase) in black
@@ -253,13 +336,13 @@ vsar-ide
 ### Reference
 
 - **[API Reference](docs/api/)** - Complete API documentation
-- **[Examples Directory](examples/)** - 6 example programs with explanations
+- **[Examples Directory](examples/)** - 7 example programs with explanations
 - **[PROGRESS.md](PROGRESS.md)** - Current capabilities and limitations
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history
 
 ## 🎯 What Can VSAR Do?
 
-### ✅ Currently Supported (Phase 0-2)
+### ✅ Currently Supported (Phase 0-3)
 
 **Deductive Reasoning:**
 - ✅ Ground facts insertion and querying
@@ -269,6 +352,9 @@ vsar-ide
 - ✅ Recursive rules (arbitrary depth)
 - ✅ Multiple interacting rules
 - ✅ Semi-naive evaluation optimization
+- ✅ Classical negation (`~predicate`) for explicit negative facts
+- ✅ Negation-as-failure (`not predicate`) in rule bodies
+- ✅ Stratification analysis with warnings for non-stratified programs
 
 **Approximate Reasoning:**
 - ✅ Similarity-based retrieval (fuzzy matching)
@@ -289,13 +375,13 @@ vsar-ide
 - ✅ Full traceability and provenance
 - ✅ HDF5 persistence
 
-### ⏳ Limitations (Planned for Phase 3+)
+### ⏳ Limitations (Planned for Phase 4+)
 
 - ⏳ **Single-variable queries only** - `parent(alice, ?)` works, `parent(?, ?)` doesn't yet
-- ⏳ **No negation** - Cannot express `not enemy(X, Y)` or negation-as-failure
 - ⏳ **No aggregation** - Cannot count, sum, max, etc.
 - ⏳ **Forward chaining only** - No backward chaining or goal-directed search
 - ⏳ **No magic sets** - Cannot optimize query-driven derivation
+- ⏳ **Limited constraint solving** - No general constraint propagation
 
 See [PROGRESS.md](PROGRESS.md) for detailed capability analysis and roadmap.
 
@@ -339,14 +425,19 @@ VSAR uses a layered architecture:
 ### Facts
 
 ```prolog
+// Positive facts
 fact parent(alice, bob).
 fact parent(bob, carol).
 fact lives_in(alice, boston).
 fact transfer(alice, bob, money).   // Ternary fact
 fact person(alice).                  // Unary fact
+
+// Negative facts (Phase 3)
+fact ~enemy(alice, bob).             // Alice is NOT an enemy of Bob
+fact ~criminal(alice).               // Alice is NOT a criminal
 ```
 
-### Rules (Phase 2)
+### Rules (Phase 2-3)
 
 ```prolog
 // Grandparent: X is grandparent of Z if X is parent of Y and Y is parent of Z
@@ -360,6 +451,12 @@ rule ancestor(X, Z) :- parent(X, Y), ancestor(Y, Z).
 
 // Sibling: Share same parent
 rule sibling(X, Y) :- parent(Z, X), parent(Z, Y).
+
+// Negation-as-failure (Phase 3): Safe person has no enemies
+rule safe(X) :- person(X), not enemy(X, Y).
+
+// Multiple NAF literals: Trustworthy person is safe and not a criminal
+rule trustworthy(X) :- safe(X), not criminal(X).
 ```
 
 ### Queries
@@ -369,6 +466,8 @@ query parent(alice, X)?         // Find children of alice
 query parent(X, carol)?         // Find parents of carol
 query grandparent(alice, X)?    // Find grandchildren of alice (via rules)
 query ancestor(alice, X)?       // Find all descendants (transitive)
+query safe(X)?                  // Find safe people (via NAF rules)
+query ~criminal(alice)?         // Check negative fact
 ```
 
 ### Directives
@@ -579,10 +678,11 @@ pytest tests/integration/test_e2e_phase2.py  # End-to-end tests
 ```
 
 **Test Statistics:**
-- **392 tests** (all passing, 4 skipped)
-- **97.56% coverage**
-- Unit tests: 370
-- Integration tests: 22
+- **446 tests** (all passing, 4 skipped)
+- **97.82% coverage**
+- Unit tests: 392
+- Integration tests: 36
+- Negation tests: 54
 - End-to-end tests: 5
 
 ## 🗺️ Project Status & Roadmap
@@ -610,14 +710,20 @@ pytest tests/integration/test_e2e_phase2.py  # End-to-end tests
 - Novelty detection
 - Query with automatic rule application
 
-### 🔜 Phase 3: Advanced Features (Planned)
+### ✅ Phase 3: Negation Support (Complete)
+- Classical negation (`~predicate`) for explicit negative facts
+- Negation-as-failure (`not predicate`) in rule bodies
+- Stratification analysis and cycle detection
+- Paraconsistent logic (allows contradictions)
+- Warnings for non-stratified programs
+
+### 🔜 Phase 4: Advanced Features (Planned)
 - Multi-variable queries (`parent(?, ?)?`)
-- Stratified negation
 - Aggregation (count, sum, max)
 - Backward chaining
 - Magic sets optimization
 
-### 🔜 Phase 4: Scale & Performance (Planned)
+### 🔜 Phase 5: Scale & Performance (Planned)
 - Incremental maintenance
 - Query planning and optimization
 - Parallel execution
@@ -635,10 +741,10 @@ See [PROGRESS.md](PROGRESS.md) for detailed status and comparison to other reaso
 5. Large-scale approximate reasoning (vectorized operations)
 
 **Not yet suitable for:**
-1. Complex logical puzzles requiring negation
-2. Planning problems (need backward chaining)
-3. Ontology reasoning (need DL features)
-4. Answer set programming tasks
+1. Planning problems (need backward chaining)
+2. Ontology reasoning (need DL features)
+3. Complex answer set programming (need choice rules, optimization)
+4. Real-time reasoning (optimization needed)
 
 ## 🤝 Contributing
 

@@ -21,7 +21,7 @@ class TestCleanup:
     @pytest.fixture
     def registry(self, backend: FHRRBackend) -> SymbolRegistry:
         """Create test registry with sample entities."""
-        registry = SymbolRegistry(backend, seed=42)
+        registry = SymbolRegistry(dim=backend.dimension, seed=42)
 
         # Register some entities
         registry.register(SymbolSpace.ENTITIES, "alice")
@@ -50,7 +50,7 @@ class TestCleanup:
         alice_vec = registry.get(SymbolSpace.ENTITIES, "alice")
         assert alice_vec is not None
 
-        noise = backend.generate_random(jax.random.PRNGKey(999), (backend.dimension,))
+        noise = backend.generate_random(jax.random.PRNGKey(999), (backend.dimensionension,))
         noise = backend.normalize(noise) * 0.1  # Small noise
 
         noisy_vec = alice_vec + noise
@@ -86,7 +86,7 @@ class TestCleanup:
 
     def test_cleanup_empty_space(self, backend: FHRRBackend, registry: SymbolRegistry) -> None:
         """Test cleanup on empty symbol space."""
-        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
         vec = backend.normalize(vec)
 
         # ATTRIBUTES space is empty
@@ -148,7 +148,7 @@ class TestCleanup:
         self, backend: FHRRBackend, registry: SymbolRegistry
     ) -> None:
         """Test get_top_symbol on empty space returns None."""
-        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
         vec = backend.normalize(vec)
 
         result = get_top_symbol(SymbolSpace.ATTRIBUTES, vec, registry, backend)

@@ -1,34 +1,60 @@
-"""Typed symbol spaces for VSAR."""
+"""Typed symbol spaces for VSAR v2.0.
+
+This module defines the typed symbol spaces used in the new FHRR-based encoding.
+Each space maintains separate basis vectors to prevent collisions and enable
+typed cleanup operations.
+"""
 
 from enum import Enum
 
 
 class SymbolSpace(Enum):
     """
-    Typed symbol spaces to prevent collisions.
+    Typed symbol spaces for the new VSAR encoding architecture.
 
-    VSAR uses separate symbol spaces for different types of symbols to reduce
-    collisions in the hypervector space. Each space maintains its own basis
-    vectors and cleanup memory.
+    The new specification uses 11 distinct symbol spaces to organize symbols
+    by their semantic role. This enables:
+    - Type-safe cleanup (only search relevant space)
+    - Reduced collisions (symbols in different spaces don't interfere)
+    - Structure-informed decoding (unbind → typed cleanup)
     """
 
+    # Core domain symbols
     ENTITIES = "E"
-    """Domain entities (e.g., alice, bob, boston)."""
+    """Domain entities / constants (e.g., alice, bob, boston)."""
 
-    RELATIONS = "R"
-    """Predicates/relations (e.g., parent, lives_in)."""
+    CONCEPTS = "C"
+    """Unary predicates / concept names (e.g., Person, Doctor)."""
 
-    ATTRIBUTES = "A"
-    """Attributes and literals (e.g., age, color)."""
+    ROLES = "R"
+    """Binary relations (e.g., hasChild, worksAt)."""
 
-    CONTEXTS = "C"
-    """Context markers for belief modalities (optional, Phase 3+)."""
+    FUNCTIONS = "F"
+    """Function symbols (e.g., mother, father)."""
 
-    TIME = "T"
-    """Temporal symbols (optional, Phase 3+)."""
+    PREDICATES = "P"
+    """General predicates of any arity (e.g., parent, grandparent)."""
 
-    STRUCTURAL = "S"
-    """Structural operators for Clifford mode (optional)."""
+    # Structural role markers
+    ARG_ROLES = "ARG"
+    """Argument position markers (ARG₁, ARG₂, ARG₃, ...)."""
+
+    STRUCT_ROLES = "STRUCT"
+    """Structural role markers (HEAD, BODY, SRC, TGT, LEFT, RIGHT)."""
+
+    # Metadata and type tags
+    TAGS = "TAG"
+    """Type tags (ATOM, TERM, RULE, LIT, META, AXIOM)."""
+
+    # Logical operators
+    OPS = "OP"
+    """Logical operators (AND, OR, NOT, EXISTS, FORALL)."""
+
+    EPI_OPS = "EPI"
+    """Epistemic operators (KNOW, BELIEF) for multi-agent reasoning."""
+
+    GRAPH_OPS = "GRAPH"
+    """Argumentation graph operators (EDGE, SUPPORT, ATTACK)."""
 
     def __str__(self) -> str:
         """Return the symbol space abbreviation."""

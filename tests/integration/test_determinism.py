@@ -54,11 +54,11 @@ class TestDeterminism:
     def test_same_seed_produces_same_encoding(self) -> None:
         """Test that same seed produces identical atom encodings."""
         backend1 = FHRRBackend(dim=256, seed=42)
-        registry1 = SymbolRegistry(backend1, seed=42)
+        registry1 = SymbolRegistry(dim=256, seed=42)
         encoder1 = VSAEncoder(backend1, registry1, seed=42)
 
         backend2 = FHRRBackend(dim=256, seed=42)
-        registry2 = SymbolRegistry(backend2, seed=42)
+        registry2 = SymbolRegistry(dim=256, seed=42)
         encoder2 = VSAEncoder(backend2, registry2, seed=42)
 
         # Encode same atom
@@ -72,14 +72,14 @@ class TestDeterminism:
         """Test that same seed produces identical retrieval results."""
         # System 1
         backend1 = FHRRBackend(dim=512, seed=42)
-        registry1 = SymbolRegistry(backend1, seed=42)
+        registry1 = SymbolRegistry(dim=512, seed=42)
         encoder1 = VSAEncoder(backend1, registry1, seed=42)
         kb1 = KnowledgeBase(backend1)
         retriever1 = Retriever(backend1, registry1, kb1, encoder1)
 
         # System 2
         backend2 = FHRRBackend(dim=512, seed=42)
-        registry2 = SymbolRegistry(backend2, seed=42)
+        registry2 = SymbolRegistry(dim=512, seed=42)
         encoder2 = VSAEncoder(backend2, registry2, seed=42)
         kb2 = KnowledgeBase(backend2)
         retriever2 = Retriever(backend2, registry2, kb2, encoder2)
@@ -140,12 +140,12 @@ class TestDeterminism:
     def test_kb_bundling_deterministic(self) -> None:
         """Test that KB bundling is deterministic."""
         backend1 = FHRRBackend(dim=256, seed=42)
-        registry1 = SymbolRegistry(backend1, seed=42)
+        registry1 = SymbolRegistry(dim=256, seed=42)
         encoder1 = VSAEncoder(backend1, registry1, seed=42)
         kb1 = KnowledgeBase(backend1)
 
         backend2 = FHRRBackend(dim=256, seed=42)
-        registry2 = SymbolRegistry(backend2, seed=42)
+        registry2 = SymbolRegistry(dim=256, seed=42)
         encoder2 = VSAEncoder(backend2, registry2, seed=42)
         kb2 = KnowledgeBase(backend2)
 
@@ -178,7 +178,7 @@ class TestDeterminism:
         def run_experiment():
             """Run complete VSA experiment."""
             backend = FHRRBackend(dim=512, seed=42)
-            registry = SymbolRegistry(backend, seed=42)
+            registry = SymbolRegistry(dim=512, seed=42)
             encoder = VSAEncoder(backend, registry, seed=42)
             kb = KnowledgeBase(backend)
             retriever = Retriever(backend, registry, kb, encoder)
@@ -209,7 +209,7 @@ class TestDeterminism:
     def test_insertion_order_matters(self) -> None:
         """Test that insertion order affects bundle (commutative but order-dependent)."""
         backend = FHRRBackend(dim=256, seed=42)
-        registry = SymbolRegistry(backend, seed=42)
+        registry = SymbolRegistry(dim=256, seed=42)
         encoder = VSAEncoder(backend, registry, seed=42)
 
         # KB 1: Insert in order A, B

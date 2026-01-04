@@ -1,0 +1,77 @@
+// Example 09: Backward Chaining (Goal-Directed Proof Search)
+// This example demonstrates backward chaining as an alternative to forward chaining.
+//
+// NOTE: Backward chaining requires programmatic API access (not yet in IDE).
+// This file shows the VSARL syntax; run via Python API for actual execution.
+
+@model FHRR(dim=512, seed=42);
+@beam(width=50);
+
+// Family tree facts
+fact parent(alice, bob).
+fact parent(alice, charlie).
+fact parent(bob, david).
+fact parent(charlie, eve).
+
+// Rules for family relationships
+rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+rule ancestor(X, Y) :- parent(X, Y).
+rule ancestor(X, Z) :- parent(X, Y), ancestor(Y, Z).
+
+// FORWARD CHAINING (default IDE mode):
+// - Materializes ALL derivable facts upfront
+// - Derives: grandparent(alice, david), grandparent(alice, eve)
+// - Derives: ancestor(alice, bob), ancestor(alice, charlie), ancestor(alice, david), etc.
+// - Then answers queries by lookup
+
+// BACKWARD CHAINING (programmatic mode):
+// - Proves SPECIFIC goals on-demand
+// - Only explores relevant proof paths
+// - Useful when: (1) few specific queries, (2) large KB, (3) deep recursion
+
+// Example queries that work well with backward chaining:
+query grandparent(alice, david)?    // Backward: Unify with rule head, prove parent(alice, Y), parent(Y, david)
+query ancestor(alice, eve)?         // Backward: Recursive proof via parent chain
+
+// Comparison:
+//
+// Forward Chaining:
+//   + Amortizes cost across all queries
+//   + Pre-computation enables fast lookup
+//   - Derives unused facts
+//   - High memory for large rule sets
+//
+// Backward Chaining:
+//   + On-demand: only proves what's needed
+//   + Lower memory footprint
+//   + Better for deep recursive rules
+//   - Re-computation for each query
+//   - Requires tabling to avoid infinite loops
+
+// Advanced: Recursive proof search
+// ancestor(alice, eve) proves as:
+//   1. Try base case: parent(alice, eve)? → Fails
+//   2. Try recursive case: parent(alice, Y), ancestor(Y, eve)?
+//      - parent(alice, charlie) succeeds (Y = charlie)
+//      - ancestor(charlie, eve)? recurses
+//        - Try base case: parent(charlie, eve)? → Succeeds!
+//   3. Proof found: alice → charlie → eve
+
+// To run backward chaining via Python API:
+// ```python
+// from vsar.reasoning.backward_chaining import BackwardChainer
+// from vsar.language.ast import Atom
+//
+// chainer = BackwardChainer(engine, rules=[...], max_depth=5, threshold=0.5)
+// goal = Atom(predicate="ancestor", args=["alice", "eve"])
+// proofs = chainer.prove_goal(goal)
+//
+// for proof in proofs:
+//     print(f"Proof: {proof.substitution} (similarity: {proof.similarity:.2f})")
+// ```
+
+// Key Features:
+// 1. SLD Resolution: Adapted for approximate VSA unification
+// 2. Tabling: Memoization prevents infinite loops in recursive rules
+// 3. Depth Limiting: Bounds search to ensure termination
+// 4. Approximate Unification: Uses similarity scores instead of exact matching

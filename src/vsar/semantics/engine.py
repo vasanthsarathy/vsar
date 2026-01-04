@@ -5,10 +5,11 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from vsar.encoding.vsa_encoder import VSAEncoder
+from vsar.encoding.role_filler_encoder import RoleFillerEncoder
 from vsar.kb.store import KnowledgeBase
 from vsar.kernel.vsa_backend import FHRRBackend, MAPBackend
 from vsar.language.ast import Directive, Fact, Query, Rule
+from vsar.reasoning.naf import evaluate_naf, separate_positive_and_naf
 from vsar.retrieval.query import Retriever
 from vsar.semantics.join import initial_candidates_from_atom, join_with_atom
 from vsar.semantics.substitution import Substitution, get_atom_unique_variables
@@ -73,10 +74,10 @@ class VSAREngine:
             raise ValueError(f"Unknown backend type: {backend_type}")
 
         # Initialize symbol registry
-        self.registry = SymbolRegistry(self.backend, seed=seed)
+        self.registry = SymbolRegistry(dim=dim, seed=seed)
 
         # Initialize encoder
-        self.encoder = VSAEncoder(self.backend, self.registry, seed=seed)
+        self.encoder = RoleFillerEncoder(self.backend, self.registry, seed=seed)
 
         # Initialize KB
         self.kb = KnowledgeBase(self.backend)
@@ -136,17 +137,27 @@ class VSAREngine:
     def insert_fact(self, fact: Fact) -> None:
         """Insert a fact into the knowledge base.
 
+        Supports both positive and negative facts:
+        - fact parent(alice, bob)   → positive fact
+        - fact ~enemy(alice, bob)   → negative fact
+
+        Note: Negation is stored as metadata. The same vector encoding
+        is used for both p(a,b) and ~p(a,b), with negation tracked separately.
+
         Args:
-            fact: Ground fact to insert
+            fact: Ground fact to insert (may be negated)
 
         Example:
             >>> engine.insert_fact(Fact(predicate="parent", args=["alice", "bob"]))
+            >>> engine.insert_fact(Fact(predicate="enemy", args=["alice", "bob"], negated=True))
         """
-        # Encode the fact
+        # Encode the fact (same encoding whether positive or negative)
         atom_vec = self.encoder.encode_atom(fact.predicate, fact.args)
 
-        # Insert into KB
-        self.kb.insert(fact.predicate, atom_vec, tuple(fact.args))
+        # Insert into KB (TODO: track negation metadata)
+        # For now, use predicate name to distinguish negated facts
+        pred_name = f"~{fact.predicate}" if fact.negated else fact.predicate
+        self.kb.insert(pred_name, atom_vec, tuple(fact.args))
 
     def query(self, query: Query, k: int | None = None, rules: list[Rule] | None = None) -> QueryResult:
         """Execute a query with tracing and optional rule application.
@@ -211,46 +222,134 @@ class VSAREngine:
         var_positions = query.get_variables()
         bound_args = query.get_bound_args()
 
-        if len(var_positions) != 1:
-            raise ValueError(f"Query must have exactly 1 variable, got {len(var_positions)}")
+        # Handle fully ground queries (existence check for NAF)
+        if len(var_positions) == 0:
+            # All positions bound - check if this EXACT fact exists
+            # For NAF, we need exact matching, not approximate matching
+            args_list = [str(arg) for arg in query.args]
+            args_tuple = tuple(args_list)
 
-        var_position = var_positions[0] + 1  # Convert to 1-indexed
+            # Get all facts for this predicate
+            pred_name = f"~{query.predicate}" if query.negated else query.predicate
+            if not self.kb.has_predicate(pred_name):
+                # Predicate doesn't exist - return empty results
+                results = []
+            else:
+                all_facts = self.kb.get_facts(pred_name)
 
-        # Execute retrieval
-        results = self.retriever.retrieve(
-            query.predicate,
-            var_position,
-            bound_args,
-            k=k,
-        )
+                # Check for exact match by comparing argument tuples
+                if args_tuple in all_facts:
+                    # Exact match found - return with perfect score
+                    results = [(str(args_tuple), 1.0)]
+                else:
+                    # No exact match - return empty for NAF purposes
+                    results = []
 
-        # Record retrieval results
-        self.trace.record(
-            "retrieval",
-            {
-                "predicate": query.predicate,
-                "var_position": var_position,
-                "k": k,
-                "num_results": len(results),
-                "results": results[:5],  # Only store top 5 in trace
-            },
-            parent_ids=[trace_id],
-        )
+            # Record retrieval results
+            self.trace.record(
+                "existence_check",
+                {
+                    "predicate": query.predicate,
+                    "args": args_list,
+                    "negated": query.negated,
+                    "num_results": len(results),
+                    "results": results[:5],
+                },
+                parent_ids=[trace_id],
+            )
 
-        return QueryResult(
-            query=query,
-            results=results,
-            trace_id=trace_id,
-        )
+            return QueryResult(
+                query=query,
+                results=results,
+                trace_id=trace_id,
+            )
+
+        # Dispatch based on number of variables
+        if len(var_positions) == 1:
+            # Single-variable query: use optimized single-variable retrieval
+            var_position = var_positions[0] + 1  # Convert to 1-indexed
+
+            # Execute retrieval
+            results = self.retriever.retrieve(
+                query.predicate,
+                var_position,
+                bound_args,
+                k=k,
+            )
+
+            # Record retrieval results
+            self.trace.record(
+                "retrieval",
+                {
+                    "predicate": query.predicate,
+                    "var_position": var_position,
+                    "k": k,
+                    "num_results": len(results),
+                    "results": results[:5],  # Only store top 5 in trace
+                },
+                parent_ids=[trace_id],
+            )
+
+            return QueryResult(
+                query=query,
+                results=results,
+                trace_id=trace_id,
+            )
+
+        elif len(var_positions) >= 2:
+            # Multi-variable query: use iterative beam search
+            # Convert to 1-indexed positions
+            var_positions_1indexed = [pos + 1 for pos in var_positions]
+
+            # Execute multi-variable retrieval
+            multi_results = self.retriever.retrieve_multi_variable(
+                query.predicate,
+                var_positions_1indexed,
+                bound_args,
+                k=k,
+                beam_width=self.beam_width,
+            )
+
+            # Convert multi-variable results to standard format
+            # For backward compatibility, flatten tuples to strings
+            results = [(str(binding), score) for binding, score in multi_results]
+
+            # Record retrieval results
+            self.trace.record(
+                "multi_variable_retrieval",
+                {
+                    "predicate": query.predicate,
+                    "var_positions": var_positions_1indexed,
+                    "k": k,
+                    "beam_width": self.beam_width,
+                    "num_results": len(results),
+                    "results": results[:5],  # Only store top 5 in trace
+                },
+                parent_ids=[trace_id],
+            )
+
+            return QueryResult(
+                query=query,
+                results=results,
+                trace_id=trace_id,
+            )
+
+        else:
+            # No variables (should have been handled above)
+            return QueryResult(
+                query=query,
+                results=[],
+                trace_id=trace_id,
+            )
 
     def apply_rule(self, rule: Rule, k: int | None = None) -> int:
         """Apply a rule to derive new facts using beam search joins.
 
-        Supports both single-body and multi-body rules. Uses beam search to
-        manage combinatorial explosion in joins.
+        Supports both single-body and multi-body rules with NAF literals.
+        Uses beam search to manage combinatorial explosion in joins.
 
         Args:
-            rule: Rule to apply
+            rule: Rule to apply (may have NAF literals in body)
             k: Number of results to retrieve per query (default: 10)
 
         Returns:
@@ -259,6 +358,7 @@ class VSAREngine:
         Example:
             >>> # Single-body: rule human(X) :- person(X).
             >>> # Multi-body: rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+            >>> # With NAF: rule safe(X) :- person(X), not enemy(X, _).
         """
         if k is None:
             k = 10
@@ -267,21 +367,28 @@ class VSAREngine:
             # No body atoms - can't derive anything
             return 0
 
-        # Check if all body predicates exist in KB
-        for body_atom in rule.body:
+        # Separate positive atoms from NAF literals
+        positive_atoms, naf_literals = separate_positive_and_naf(rule.body)
+
+        if len(positive_atoms) == 0:
+            # No positive atoms - can't derive anything (NAF only makes sense with positive atoms)
+            return 0
+
+        # Check if all positive body predicates exist in KB
+        for body_atom in positive_atoms:
             if not self.kb.has_predicate(body_atom.predicate):
                 # Missing predicate - no derivations possible
                 return 0
 
-        # Start with first body atom
+        # Start with first positive atom
         try:
-            candidates = initial_candidates_from_atom(rule.body[0], self.query, k=k, kb=self.kb)
+            candidates = initial_candidates_from_atom(positive_atoms[0], self.query, k=k, kb=self.kb)
         except ValueError:
             # First atom has unsupported structure
             return 0
 
-        # Join with remaining body atoms
-        for body_atom in rule.body[1:]:
+        # Join with remaining positive atoms
+        for body_atom in positive_atoms[1:]:
             candidates = join_with_atom(
                 candidates,
                 body_atom,
@@ -292,6 +399,27 @@ class VSAREngine:
 
             if not candidates:
                 # No candidates left after join - no derivations
+                return 0
+
+        # Filter candidates by evaluating NAF literals
+        if naf_literals:
+            filtered_candidates = []
+            for candidate in candidates:
+                # Check all NAF literals with current bindings
+                all_naf_succeed = True
+                for naf_lit in naf_literals:
+                    if not evaluate_naf(naf_lit, candidate.substitution, self, threshold=self.threshold):
+                        # NAF literal failed - reject this candidate
+                        all_naf_succeed = False
+                        break
+
+                if all_naf_succeed:
+                    filtered_candidates.append(candidate)
+
+            candidates = filtered_candidates
+
+            if not candidates:
+                # No candidates passed NAF filter
                 return 0
 
         # Apply final bindings to head and insert derived facts

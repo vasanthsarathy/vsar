@@ -6,7 +6,8 @@
       "Bash(uv run python:*)",
       "Bash(cat:*)",
       "Bash(git add:*)",
-      "Bash(uv run:*)"
+      "Bash(uv run:*)",
+      "Bash(python:*)"
     ]
   }
 }

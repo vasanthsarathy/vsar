@@ -20,7 +20,7 @@ class TestVSAEncoder:
     @pytest.fixture
     def registry(self, backend: FHRRBackend) -> SymbolRegistry:
         """Create test registry."""
-        return SymbolRegistry(backend, seed=42)
+        return SymbolRegistry(dim=backend.dimension, seed=42)
 
     @pytest.fixture
     def encoder(self, backend: FHRRBackend, registry: SymbolRegistry) -> VSAEncoder:

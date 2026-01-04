@@ -1,0 +1,46 @@
+\begin{thebibliography}{}
+
+\bibitem[\protect\citeauthoryear{Evans and
+  Grefenstette}{2018}]{evans2018learning}
+Richard Evans and Edward Grefenstette.
+\newblock Learning explanatory rules from noisy data.
+\newblock {\em Journal of Artificial Intelligence Research}, 61:1--64, 2018.
+
+\bibitem[\protect\citeauthoryear{Fodor and
+  Pylyshyn}{1988}]{fodor1988connectionism}
+Jerry~A Fodor and Zenon~W Pylyshyn.
+\newblock Connectionism and cognitive architecture: A critical analysis.
+\newblock {\em Cognition}, 28(1-2):3--71, 1988.
+
+\bibitem[\protect\citeauthoryear{Garcez \bgroup \em et al.\egroup
+  }{2012}]{garcez2012neural}
+Artur~d'Avila Garcez, Tarek~R Besold, Luc De~Raedt, Peter Földiak, Pascal
+  Hitzler, Thomas Icard, Kai-Uwe Kühnberger, Luis~C Lamb, Risto Miikkulainen,
+  and Daniel~L Silver.
+\newblock Neural-symbolic cognitive reasoning.
+\newblock {\em Springer}, 2012.
+
+\bibitem[\protect\citeauthoryear{Gelfond and
+  Lifschitz}{1988}]{gelfond1988stable}
+Michael Gelfond and Vladimir Lifschitz.
+\newblock The stable model semantics for logic programming.
+\newblock {\em ICLP/SLP}, 88:1070--1080, 1988.
+
+\bibitem[\protect\citeauthoryear{Kanerva}{2009}]{kanerva2009hyperdimensional}
+Pentti Kanerva.
+\newblock Hyperdimensional computing: An introduction to computing in
+  distributed representation with high-dimensional random vectors.
+\newblock {\em Cognitive computation}, 1(2):139--159, 2009.
+
+\bibitem[\protect\citeauthoryear{Lloyd}{1987}]{lloyd1987foundations}
+John~W Lloyd.
+\newblock {\em Foundations of logic programming}.
+\newblock Springer Science \& Business Media, 1987.
+
+\bibitem[\protect\citeauthoryear{Plate}{2003}]{plate2003holographic}
+Tony~A Plate.
+\newblock Holographic reduced representation: Distributed representation for
+  cognitive structures.
+\newblock {\em CSLI Publications}, 2003.
+
+\end{thebibliography}

@@ -20,7 +20,7 @@ class TestVSAFlow:
         backend = FHRRBackend(dim=512, seed=42)
 
         # Create registry
-        registry = SymbolRegistry(backend, seed=42)
+        registry = SymbolRegistry(dim=backend.dimension, seed=42)
 
         # Create encoder
         encoder = VSAEncoder(backend, registry, seed=42)

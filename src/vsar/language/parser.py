@@ -6,7 +6,7 @@ from typing import Any
 from lark import Lark, Token, Transformer, Tree
 from lark.exceptions import UnexpectedInput, VisitError
 
-from vsar.language.ast import Atom, Directive, Fact, Program, Query, Rule
+from vsar.language.ast import Atom, Directive, Fact, NAFLiteral, Program, Query, Rule
 
 
 class VSARLTransformer(Transformer):
@@ -82,25 +82,46 @@ class VSARLTransformer(Transformer):
         return token
 
     def fact(self, items: list[Any]) -> Fact:
-        """Build Fact from fact atom."""
-        predicate, args = items[0]
+        """Build Fact from fact atom or fact negated_atom."""
+        # Check if first item is a tuple (negated=False) or Tree (negated=True)
+        item = items[0]
+        if isinstance(item, Tree) and item.data == "negated_atom":
+            negated = True
+            predicate, args = item.children[0]  # Get the atom inside negated_atom
+        else:
+            negated = False
+            predicate, args = item
+
         # Ensure all args are lowercase (no variables in facts)
         if any(arg[0].isupper() for arg in args):
             raise ValueError("Facts cannot contain variables")
-        return Fact(predicate=predicate, args=args)
+        return Fact(predicate=predicate, args=args, negated=negated)
 
     def query(self, items: list[Any]) -> Query:
-        """Build Query from query atom?"""
-        predicate, args = items[0]
+        """Build Query from query atom or query negated_atom."""
+        # Check if first item is a tuple (negated=False) or Tree (negated=True)
+        item = items[0]
+        if isinstance(item, Tree) and item.data == "negated_atom":
+            negated = True
+            predicate, args = item.children[0]  # Get the atom inside negated_atom
+        else:
+            negated = False
+            predicate, args = item
+
         # Convert variable strings to None for Query
         query_args = [None if (arg and arg[0].isupper()) else arg for arg in args]
-        return Query(predicate=predicate, args=query_args)
+        return Query(predicate=predicate, args=query_args, negated=negated)
 
     def atom(self, items: list[Any]) -> tuple[str, list[str]]:
         """Build (predicate, args) from atom."""
         predicate = str(items[0])
         args = items[1] if len(items) > 1 else []
         return (predicate, args)
+
+    def negated_atom(self, items: list[Any]) -> Tree:
+        """Keep negated_atom as Tree for fact/query to detect."""
+        # Return as Tree so fact/query can detect it's negated
+        return Tree("negated_atom", items)
 
     def predicate(self, items: list[Any]) -> str:
         """Extract predicate name."""
@@ -127,12 +148,25 @@ class VSARLTransformer(Transformer):
         body_atoms = items[1]
         return Rule(head=head, body=body_atoms)
 
-    def body(self, items: list[Any]) -> list[Atom]:
-        """Build list of Atoms from body."""
-        atoms = []
-        for predicate, args in items:
-            atoms.append(Atom(predicate=predicate, args=args))
-        return atoms
+    def body(self, items: list[Any]) -> list[Atom | NAFLiteral]:
+        """Build list of Atoms and NAFLiterals from body."""
+        return items
+
+    def body_literal(self, items: list[Any]) -> Atom | NAFLiteral:
+        """Extract body literal (atom or NAF literal)."""
+        item = items[0]
+        # If it's a NAFLiteral, return as-is
+        if isinstance(item, NAFLiteral):
+            return item
+        # Otherwise, it's an atom tuple (predicate, args)
+        predicate, args = item
+        return Atom(predicate=predicate, args=args)
+
+    def naf_literal(self, items: list[Any]) -> NAFLiteral:
+        """Build NAFLiteral from 'not atom'."""
+        predicate, args = items[0]
+        atom = Atom(predicate=predicate, args=args)
+        return NAFLiteral(atom=atom)
 
     def variable(self, items: list[Any]) -> str:
         """Extract variable name as string."""

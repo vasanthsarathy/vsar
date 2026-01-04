@@ -38,10 +38,16 @@ class VSARLHighlighter:
         # Predicates (lowercase identifiers)
         self.text.tag_config("predicate", foreground="#000000")  # Black
 
+        # Negation operators (~, not)
+        self.text.tag_config("negation", foreground="#DC143C", font=("Courier", 10, "bold"))  # Crimson, bold
+
     def _compile_patterns(self) -> None:
         """Compile regex patterns for syntax elements."""
-        # Keywords
-        self.keyword_pattern = re.compile(r"\b(fact|rule|query)\b")
+        # Keywords (including 'not' for NAF)
+        self.keyword_pattern = re.compile(r"\b(fact|rule|query|not)\b")
+
+        # Negation prefix (~) before predicates
+        self.negation_prefix_pattern = re.compile(r"~(?=[a-z])")
 
         # Directives (@ followed by word)
         self.directive_pattern = re.compile(r"@\w+")
@@ -64,7 +70,7 @@ class VSARLHighlighter:
     def highlight_all(self) -> None:
         """Apply syntax highlighting to entire text."""
         # Remove existing tags
-        for tag in ["keyword", "directive", "comment", "string", "variable", "predicate"]:
+        for tag in ["keyword", "directive", "comment", "string", "variable", "predicate", "negation"]:
             self.text.tag_remove(tag, "1.0", tk.END)
 
         # Get all text
@@ -83,13 +89,16 @@ class VSARLHighlighter:
         # 3. Directives
         self._apply_pattern(content, self.directive_pattern, "directive")
 
-        # 4. Keywords
+        # 4. Negation prefix (~)
+        self._apply_pattern(content, self.negation_prefix_pattern, "negation")
+
+        # 5. Keywords (including 'not')
         self._apply_pattern(content, self.keyword_pattern, "keyword")
 
-        # 5. Variables
+        # 6. Variables
         self._apply_pattern(content, self.variable_pattern, "variable")
 
-        # 6. Predicates (lowest priority)
+        # 7. Predicates (lowest priority)
         # Skip predicates that are part of keywords or directives
         self._apply_predicate_pattern(content)
 

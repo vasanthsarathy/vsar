@@ -58,6 +58,8 @@ Quick reference for writing correct VSAR programs.
 
 ## Facts
 
+### Positive Facts
+
 ```prolog
 fact parent(alice, bob).
 fact lives_in(alice, boston).
@@ -65,10 +67,19 @@ fact transfer(alice, bob, money).
 fact person(alice).
 ```
 
+### Negative Facts (Phase 3)
+
+```prolog
+fact ~enemy(alice, bob).      // Alice is NOT an enemy of Bob
+fact ~criminal(alice).         // Alice is NOT a criminal
+fact ~member(dave, club).      // Dave is NOT a member
+```
+
 **Rules**:
 - All arguments must be constants (lowercase)
 - End with `.`
 - No variables allowed
+- Use `~` prefix for negative facts
 
 ---
 
@@ -131,7 +142,52 @@ rule connected(X, Z) :- connected(X, Y), connected(Y, Z).
 
 ---
 
+## Negation-as-Failure (Phase 3)
+
+### NAF in Rules
+
+```prolog
+rule safe(X) :- person(X), not enemy(X, Y).
+```
+
+### Multiple NAF Literals
+
+```prolog
+rule trustworthy(X) :-
+    person(X),
+    not enemy(X, Y),
+    not criminal(X).
+```
+
+### NAF vs Classical Negation
+
+```prolog
+// Classical negation (explicit fact)
+fact ~enemy(alice, bob).
+
+// Negation-as-failure (closed-world in rules)
+rule safe(X) :- person(X), not enemy(X, Y).
+```
+
+**Rules**:
+- Use `not` keyword before atom
+- NAF only in rule bodies
+- Succeeds if atom cannot be proven
+- Variables can be wildcards (unbound)
+
+**Common mistakes**:
+- `rule safe(X) :- person(X), ~enemy(X, Y).` ❌ (use `not` not `~`)
+- `fact not enemy(alice, bob).` ❌ (use `~` for negative facts)
+
+**Correct**:
+- `rule safe(X) :- person(X), not enemy(X, Y).` ✅
+- `fact ~enemy(alice, bob).` ✅
+
+---
+
 ## Complete Example
+
+### Without Negation
 
 ```prolog
 // Configuration
@@ -151,6 +207,36 @@ rule ancestor(X, Z) :- parent(X, Y), ancestor(Y, Z).
 // Queries
 query ancestor(alice, X)?
 query parent(X, dave)?
+```
+
+### With Negation (Phase 3)
+
+```prolog
+// Configuration
+@model FHRR(dim=1024, seed=42);
+
+// Positive facts
+fact person(alice).
+fact person(bob).
+fact person(carol).
+fact enemy(bob, dave).
+
+// Negative facts (explicit)
+fact ~criminal(alice).
+fact ~criminal(carol).
+
+// Rules with NAF
+rule safe(X) :-
+    person(X),
+    not enemy(X, Y).
+
+rule trustworthy(X) :-
+    safe(X),
+    not criminal(X).
+
+// Queries
+query safe(X)?           // Returns: alice, carol
+query trustworthy(X)?    // Returns: alice, carol
 ```
 
 ---

@@ -340,6 +340,8 @@ for entity, score in result.results:
 - **[CLI Reference](cli-reference.md)** - Learn all CLI commands and options
 - **[Language Reference](language-reference.md)** - Complete VSARL syntax guide
 - **[User Guides](guides/basic-usage.md)** - Step-by-step tutorials
+- **[Rules & Chaining Guide](guides/rules-and-chaining.md)** - Learn about rules and inference
+- **[Negation Guide](guides/negation-guide.md)** - Master classical negation and negation-as-failure
 - **[Python API Guide](guides/python-api.md)** - Build applications with VSAR
 - **[Architecture](architecture.md)** - Understand how VSAR works
 

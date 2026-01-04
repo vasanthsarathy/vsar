@@ -26,9 +26,9 @@ class TestKBPersistence:
         kb = KnowledgeBase(backend)
 
         # Add some facts
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
-        vec3 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec3 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
         kb.insert("parent", vec2, ("bob", "carol"))
@@ -138,7 +138,7 @@ class TestKBPersistence:
 
         # Create new KB with different facts
         new_kb = KnowledgeBase(backend)
-        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
         new_kb.insert("human", vec, ("alice",))
 
         # Overwrite
@@ -172,7 +172,7 @@ class TestKBPersistence:
 
         # Insert facts in specific order
         for i in range(5):
-            vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+            vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
             kb.insert("test", vec, (f"entity_{i}",))
 
         save_kb(kb, temp_file)
@@ -189,7 +189,7 @@ class TestKBPersistence:
 
         # Add facts for multiple predicates
         for i in range(10):
-            vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+            vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
             kb.insert(f"predicate_{i}", vec, (f"arg_{i}",))
 
         save_kb(kb, temp_file)

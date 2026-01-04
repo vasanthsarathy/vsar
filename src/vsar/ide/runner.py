@@ -39,14 +39,56 @@ class ProgramRunner:
 
             # Insert facts
             if self.program.facts:
+                # Count positive and negative facts
+                positive_facts = [f for f in self.program.facts if not f.negated]
+                negative_facts = [f for f in self.program.facts if f.negated]
+
                 self.write_console(f"Inserting {len(self.program.facts)} facts...", "info")
                 for fact in self.program.facts:
                     self.engine.insert_fact(fact)
-                self.write_console(f"[OK] Inserted {len(self.program.facts)} facts", "success")
 
-            # Show rules info
+                if negative_facts:
+                    self.write_console(
+                        f"[OK] Inserted {len(positive_facts)} positive facts, "
+                        f"{len(negative_facts)} negative facts",
+                        "success"
+                    )
+                else:
+                    self.write_console(f"[OK] Inserted {len(self.program.facts)} facts", "success")
+
+            # Apply rules if present
             if self.program.rules:
                 self.write_console(f"Found {len(self.program.rules)} rules", "info")
+
+                # Apply forward chaining
+                from vsar.semantics.chaining import apply_rules
+                import warnings
+
+                # Capture warnings for stratification
+                with warnings.catch_warnings(record=True) as w:
+                    warnings.simplefilter("always")
+
+                    self.write_console("Applying rules (forward chaining)...", "info")
+                    chaining_result = apply_rules(self.engine, self.program.rules, max_iterations=100, k=10)
+
+                    # Show stratification warnings
+                    if w:
+                        for warning in w:
+                            self.write_console(f"[WARN] {warning.message}", "warning")
+
+                # Show chaining statistics
+                if chaining_result.total_derived > 0:
+                    self.write_console(
+                        f"[OK] Applied rules in {chaining_result.iterations} iterations, "
+                        f"derived {chaining_result.total_derived} new facts",
+                        "success"
+                    )
+                    if chaining_result.fixpoint_reached:
+                        self.write_console("[INFO] Fixpoint reached", "info")
+                    elif chaining_result.max_iterations_reached:
+                        self.write_console("[WARN] Max iterations reached without fixpoint", "warning")
+                else:
+                    self.write_console("[INFO] No new facts derived from rules", "info")
 
             # Execute queries
             if not self.program.queries:
@@ -79,10 +121,8 @@ class ProgramRunner:
 
             self.write_console(f"Query {query_num}: {query_str}", "info")
 
-            # Execute query with rules if available
-            result = self.engine.query(
-                query, rules=self.program.rules if self.program.rules else None, k=10
-            )
+            # Execute query (rules already applied during program run)
+            result = self.engine.query(query, k=10)
 
             # Display results
             if not result.results:

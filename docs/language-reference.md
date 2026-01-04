@@ -7,9 +7,9 @@ VSARL (VSA Reasoning Language) is a declarative language for expressing facts, q
 VSARL programs consist of:
 
 1. **Directives** - Configuration (@model, @threshold, etc.)
-2. **Facts** - Ground atoms representing knowledge
+2. **Facts** - Ground atoms representing knowledge (positive and negative)
 3. **Queries** - Questions with variables
-4. **Rules** - Horn clauses (Phase 2)
+4. **Rules** - Horn clauses with optional negation-as-failure (Phase 2 + Phase 3)
 
 ## Syntax Conventions
 
@@ -198,6 +198,78 @@ fact relation(a, b, c, d, e).
 - No spaces in predicate names (use `_` instead)
 - Arguments are comma-separated
 - Statement ends with `.`
+
+---
+
+## Negative Facts (Phase 3)
+
+VSARL supports **classical negation** for explicitly representing negative knowledge.
+
+**Syntax:**
+
+```prolog
+fact ~PREDICATE(ARG1, ARG2, ...).
+```
+
+The `~` prefix marks a fact as negative (strong negation).
+
+**Examples:**
+
+```prolog
+// Positive facts
+fact friend(alice, bob).
+fact friend(bob, carol).
+
+// Negative facts (explicit negative knowledge)
+fact ~enemy(alice, bob).     // Alice is NOT an enemy of Bob
+fact ~criminal(alice).        // Alice is NOT a criminal
+fact ~member(dave, club).     // Dave is NOT a member of the club
+```
+
+**Use Cases:**
+
+1. **Closed-World Knowledge**: Explicitly state what is NOT true
+2. **Contradiction Detection**: System can detect inconsistencies
+3. **Paraconsistent Reasoning**: KB can contain both `p(a)` and `~p(a)` without failing
+
+**Querying Negative Facts:**
+
+```prolog
+// Query negative facts using ~ prefix
+query ~enemy(alice, X)?       // Who is alice NOT enemies with?
+query ~criminal(X)?           // Who is NOT a criminal?
+```
+
+**Consistency Checking:**
+
+VSAR operates in **paraconsistent mode** - it allows contradictions:
+
+```prolog
+fact friend(alice, bob).
+fact ~friend(alice, bob).     // Contradiction allowed!
+
+// System warns but continues execution
+// Consistency check will report the contradiction
+```
+
+To check for contradictions:
+
+```python
+from vsar.reasoning import ConsistencyChecker
+
+checker = ConsistencyChecker(engine.kb)
+report = checker.check()
+
+if not report.is_consistent:
+    print(report.summary())
+```
+
+**Important Notes:**
+
+- `~p(a)` (negative fact) is different from `not p(a)` (negation-as-failure)
+- Negative facts are explicitly stored in the KB
+- Use negative facts when you have **explicit negative knowledge**
+- Use NAF (see Rules section) when you want **closed-world assumption**
 
 ---
 
@@ -415,6 +487,159 @@ See [Rules & Chaining Guide](guides/rules-and-chaining.md) for detailed document
 
 ---
 
+## Negation-as-Failure (Phase 3)
+
+VSARL supports **negation-as-failure (NAF)** in rule bodies using the `not` keyword.
+
+**Syntax:**
+
+```prolog
+rule HEAD :- BODY1, BODY2, not BODY3, ...
+```
+
+NAF implements the **closed-world assumption**: `not p(X)` succeeds if `p(X)` cannot be proven from the KB.
+
+**Examples:**
+
+**Basic NAF:**
+
+```prolog
+// Safe person: someone who is a person and NOT an enemy of anyone
+rule safe(X) :- person(X), not enemy(X, Y).
+
+fact person(alice).
+fact person(bob).
+fact enemy(bob, carol).
+
+// Derives: safe(alice)  ✓
+// Does NOT derive: safe(bob)  ✗ (bob has an enemy)
+```
+
+**Multiple NAF Literals:**
+
+```prolog
+// Trustworthy: safe AND not a criminal
+rule trustworthy(X) :-
+    person(X),
+    not enemy(X, Y),
+    not criminal(X).
+
+fact person(alice).
+fact person(bob).
+fact person(carol).
+fact enemy(bob, dave).
+fact criminal(carol).
+
+// Derives: trustworthy(alice)  ✓
+```
+
+**NAF with Bound Variables:**
+
+```prolog
+// People who are NOT friends with specific person
+rule not_friends_with_bob(X) :-
+    person(X),
+    not friend(X, bob).
+
+fact person(alice).
+fact person(bob).
+fact person(carol).
+fact friend(alice, bob).
+
+// Derives: not_friends_with_bob(carol)  ✓
+```
+
+**Wildcard Variables (Existential Check):**
+
+```prolog
+// X has NO enemies (wildcard Y means "any")
+not enemy(X, Y)          // True if enemy(X, _) has no matches
+
+// X is NOT a member of ANY club
+not member(X, Club)      // True if member(X, _) has no matches
+```
+
+**NAF vs Classical Negation:**
+
+| Feature | NAF (`not p(X)`) | Classical Negation (`~p(a)`) |
+|---------|------------------|------------------------------|
+| **Type** | Closed-world assumption | Explicit negative knowledge |
+| **Usage** | In rule bodies only | As facts or queries |
+| **Semantics** | Succeeds if unprovable | Explicit negative assertion |
+| **Storage** | Not stored (computed) | Stored in KB |
+
+**Example showing difference:**
+
+```prolog
+// Classical negation (explicit)
+fact ~enemy(alice, bob).     // Alice is explicitly NOT an enemy of Bob
+
+// Negation-as-failure (closed-world)
+rule safe(X) :- person(X), not enemy(X, Y).
+// "If we can't prove X has enemies, X is safe"
+```
+
+**Stratification:**
+
+VSAR automatically checks for **stratified** NAF usage:
+
+```prolog
+// ✓ STRATIFIED (safe)
+rule safe(X) :- person(X), not enemy(X, Y).
+rule trusted(X) :- safe(X), not criminal(X).
+
+// ✗ NON-STRATIFIED (warning)
+rule p(X) :- not q(X).
+rule q(X) :- not p(X).  // Circular negative dependency!
+```
+
+Non-stratified programs trigger a warning:
+
+```
+Warning: Non-stratified program detected.
+Negation-as-failure may have unpredictable semantics.
+✗ Program is NOT stratified - contains negative cycles:
+  Cycle 1: p → q → p
+```
+
+VSAR will continue execution but results may be unpredictable.
+
+**Best Practices:**
+
+1. **Use NAF for closed-world reasoning**: "Not provable = false"
+2. **Use classical negation for explicit knowledge**: "Known to be false"
+3. **Avoid circular NAF dependencies**: Keep rules stratified
+4. **Test NAF behavior**: NAF semantics can be subtle
+
+**Complete Example:**
+
+```prolog
+@model FHRR(dim=1024, seed=42);
+
+// Base facts
+fact person(alice).
+fact person(bob).
+fact person(carol).
+fact enemy(bob, dave).
+fact criminal(carol).
+
+// Rules with NAF
+rule safe(X) :-
+    person(X),
+    not enemy(X, Y).
+
+rule trustworthy(X) :-
+    safe(X),
+    not criminal(X).
+
+// Query
+query trustworthy(X)?
+
+// Results: trustworthy(alice) ✓
+```
+
+---
+
 ## Lexical Structure
 
 ### Identifiers
@@ -560,16 +785,21 @@ Complete grammar in Extended Backus-Naur Form:
 
 ```ebnf
 program     ::= statement*
-statement   ::= directive | fact | query
+statement   ::= directive | fact | query | rule
 
 directive   ::= "@" IDENTIFIER (IDENTIFIER "(" params? ")" | "(" params? ")") ";"
-fact        ::= "fact" atom "."
-query       ::= "query" atom "?"
+fact        ::= "fact" "~"? atom "."
+query       ::= "query" "~"? atom "?"
+rule        ::= "rule" atom ":-" body "."
 
 atom        ::= predicate "(" args? ")"
 predicate   ::= LOWER_NAME
 args        ::= arg ("," arg)*
 arg         ::= constant | variable
+
+body        ::= body_literal ("," body_literal)*
+body_literal::= atom | naf_literal
+naf_literal ::= "not" atom
 
 constant    ::= LOWER_NAME
 variable    ::= UPPER_NAME

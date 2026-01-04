@@ -1,0 +1,70 @@
+// Example 07: Negation and Safety Analysis
+// Demonstrates classical negation (~) and negation-as-failure (not)
+
+// Configure model
+@model FHRR(dim=2048, seed=42);
+@threshold(value=0.22);
+@beam(width=50);
+@novelty(threshold=0.95);
+
+// ========================================
+// CLASSICAL NEGATION: Explicit negative facts
+// ========================================
+
+// Positive facts: people and relationships
+fact person(alice).
+fact person(bob).
+fact person(carol).
+fact person(dave).
+fact person(eve).
+
+fact enemy(bob, dave).
+fact enemy(dave, bob).
+fact criminal(dave).
+fact criminal(eve).
+
+// Negative facts: explicit statements about what is NOT true
+fact ~criminal(alice).
+fact ~criminal(bob).
+fact ~criminal(carol).
+fact ~enemy(alice, bob).
+fact ~enemy(alice, carol).
+
+// ========================================
+// NEGATION-AS-FAILURE: Rules with closed-world assumption
+// ========================================
+
+// A person is safe if they are a person and have no enemies
+rule safe(X) :-
+    not enemy(X, Y),
+    person(X).
+
+// A person is trustworthy if they are safe and not a criminal
+rule trustworthy(X) :-
+    safe(X),
+    not criminal(X).
+
+// People are friendly with each other if neither is the enemy of the other
+rule friendly(X, Y) :-
+    person(X),
+    person(Y),
+    not enemy(X, Y),
+    not enemy(Y, X).
+
+// ========================================
+// QUERIES
+// ========================================
+
+// Who is safe? (Expected: alice, carol, eve)
+query safe(X)?
+
+// Who is trustworthy? (Expected: alice, carol)
+query trustworthy(X)?
+
+// Who is friendly with alice? (Expected: alice, bob, carol, eve)
+query friendly(bob, X)?
+
+// Is alice a criminal? (Check negative fact)
+query ~criminal(alice)?
+
+

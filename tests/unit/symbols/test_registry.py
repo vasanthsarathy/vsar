@@ -21,14 +21,13 @@ class TestSymbolRegistry:
     @pytest.fixture
     def registry(self, backend: FHRRBackend) -> SymbolRegistry:
         """Create test registry."""
-        return SymbolRegistry(backend, seed=42)
+        return SymbolRegistry(dim=128, seed=42)
 
     def test_initialization(self, backend: FHRRBackend) -> None:
         """Test registry initialization."""
-        registry = SymbolRegistry(backend, seed=42)
-        assert registry.backend == backend
+        registry = SymbolRegistry(dim=128, seed=42)
+        assert registry.dim == 128
         assert registry.seed == 42
-        assert registry.count() == 0
 
     def test_register_creates_vector(self, registry: SymbolRegistry) -> None:
         """Test that registering a symbol creates a hypervector."""
@@ -210,8 +209,8 @@ class TestSymbolRegistry:
 
     def test_different_seeds_produce_different_registries(self, backend: FHRRBackend) -> None:
         """Test that different seeds produce different vectors."""
-        registry1 = SymbolRegistry(backend, seed=42)
-        registry2 = SymbolRegistry(backend, seed=123)
+        registry1 = SymbolRegistry(dim=backend.dimension, seed=42)
+        registry2 = SymbolRegistry(dim=backend.dimension, seed=123)
 
         vec1 = registry1.register(SymbolSpace.ENTITIES, "alice")
         vec2 = registry2.register(SymbolSpace.ENTITIES, "alice")
@@ -221,8 +220,8 @@ class TestSymbolRegistry:
 
     def test_same_seed_produces_same_vectors(self, backend: FHRRBackend) -> None:
         """Test that same seed produces identical vectors across registries."""
-        registry1 = SymbolRegistry(backend, seed=42)
-        registry2 = SymbolRegistry(backend, seed=42)
+        registry1 = SymbolRegistry(dim=backend.dimension, seed=42)
+        registry2 = SymbolRegistry(dim=backend.dimension, seed=42)
 
         vec1 = registry1.register(SymbolSpace.ENTITIES, "alice")
         vec2 = registry2.register(SymbolSpace.ENTITIES, "alice")

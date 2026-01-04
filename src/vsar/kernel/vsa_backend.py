@@ -59,33 +59,36 @@ class FHRRBackend(KernelBackend):
 
     def unbind(self, bound: jnp.ndarray, factor: jnp.ndarray) -> jnp.ndarray:
         """
-        Unbind using complex conjugate and normalization.
+        Unbind using FHRR circular deconvolution.
 
-        For FHRR: inverse(a)[k] = a[k] / |a[k]|^2 (complex conjugate + normalization)
-        Then unbind(c, a) = bind(c, inverse(a))
+        Uses VSAX's unbind operation which performs FFT-based deconvolution:
+        unbind(c, b) = IFFT(FFT(c) * conj(FFT(b)) / |FFT(b)|^2)
 
         Args:
             bound: Bound hypervector
             factor: Known factor to remove
 
         Returns:
-            Unbound hypervector (approximate)
+            Unbound hypervector (normalized)
         """
-        # VSAX inverse performs: a^(-1)[k] = a[k] / |a[k]|^2
-        factor_inv = self._model.opset.inverse(factor)
-        result = self._model.opset.bind(bound, factor_inv)
+        # Use VSAX's unbind operation directly (fixed in vsax>=1.3.1)
+        result = self._model.opset.unbind(bound, factor)
         return self.normalize(result)
 
     def bundle(self, vectors: list[jnp.ndarray] | jnp.ndarray, axis: int = 0) -> jnp.ndarray:
         """
-        Bundle multiple hypervectors via element-wise sum and normalization.
+        Bundle multiple hypervectors via element-wise sum (NO normalization).
+
+        CRITICAL: Does NOT normalize the result to preserve linear superposition.
+        This is essential for interference cancellation to work correctly.
+        Normalization should only happen once, at the final storage step.
 
         Args:
             vectors: List of hypervectors or array of hypervectors
             axis: Axis along which to bundle (ignored for VSAX, kept for interface compatibility)
 
         Returns:
-            Bundled hypervector
+            Bundled hypervector (NOT normalized - preserves magnitudes)
         """
         if isinstance(vectors, list):
             # VSAX bundle takes variable args (*vecs)
@@ -93,11 +96,15 @@ class FHRRBackend(KernelBackend):
         else:
             # If array, unpack along first axis
             bundled = self._model.opset.bundle(*list(vectors))
-        return self.normalize(bundled)
+        # DO NOT NORMALIZE - preserves magnitudes for interference cancellation
+        return bundled
 
     def similarity(self, a: jnp.ndarray, b: jnp.ndarray) -> float:
         """
         Compute cosine similarity between two hypervectors.
+
+        For FHRR (complex vectors), VSAX cosine_similarity returns the magnitude
+        of the complex dot product, which is already in [0, 1].
 
         Args:
             a: First hypervector
@@ -106,10 +113,10 @@ class FHRRBackend(KernelBackend):
         Returns:
             Similarity score in [0, 1]
         """
-        # VSAX provides cosine_similarity
+        # For complex FHRR vectors, cosine_similarity already returns [0, 1]
+        # Do NOT transform it - that would shift random similarities from 0 to 0.5!
         sim = cosine_similarity(a, b)
-        # Normalize to [0, 1] range (cosine is in [-1, 1])
-        return float((sim + 1.0) / 2.0)
+        return float(sim)
 
     def generate_random(self, key: jax.random.PRNGKey, shape: tuple[int, ...]) -> jnp.ndarray:
         """
@@ -229,14 +236,18 @@ class MAPBackend(KernelBackend):
 
     def bundle(self, vectors: list[jnp.ndarray] | jnp.ndarray, axis: int = 0) -> jnp.ndarray:
         """
-        Bundle multiple hypervectors via element-wise sum and normalization.
+        Bundle multiple hypervectors via element-wise sum (NO normalization).
+
+        CRITICAL: Does NOT normalize the result to preserve linear superposition.
+        This is essential for interference cancellation to work correctly.
+        Normalization should only happen once, at the final storage step.
 
         Args:
             vectors: List of hypervectors or array of hypervectors
             axis: Axis along which to bundle (ignored for VSAX, kept for interface compatibility)
 
         Returns:
-            Bundled hypervector
+            Bundled hypervector (NOT normalized - preserves magnitudes)
         """
         if isinstance(vectors, list):
             # VSAX bundle takes variable args (*vecs)
@@ -244,7 +255,8 @@ class MAPBackend(KernelBackend):
         else:
             # If array, unpack along first axis
             bundled = self._model.opset.bundle(*list(vectors))
-        return self.normalize(bundled)
+        # DO NOT NORMALIZE - preserves magnitudes for interference cancellation
+        return bundled
 
     def similarity(self, a: jnp.ndarray, b: jnp.ndarray) -> float:
         """

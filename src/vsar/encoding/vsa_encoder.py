@@ -35,7 +35,7 @@ class VSAEncoder(AtomEncoder):
         >>> from vsar.kernel.vsa_backend import FHRRBackend
         >>> from vsar.symbols.registry import SymbolRegistry
         >>> backend = FHRRBackend(dim=512, seed=42)
-        >>> registry = SymbolRegistry(backend, seed=42)
+        >>> registry = SymbolRegistry(dim=backend.dim, seed=42)
         >>> encoder = VSAEncoder(backend, registry, seed=42)
         >>>
         >>> # Register symbols

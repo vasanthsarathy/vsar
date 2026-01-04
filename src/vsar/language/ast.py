@@ -18,25 +18,29 @@ class Directive(BaseModel):
 
 
 class Fact(BaseModel):
-    """Ground fact: fact parent(alice, bob)."""
+    """Ground fact: fact parent(alice, bob) or fact ~enemy(alice, bob)."""
 
     predicate: str = Field(..., description="Predicate name (lowercase)")
     args: list[str] = Field(..., description="Arguments (all ground terms)")
+    negated: bool = Field(default=False, description="True if this is a negative fact (~)")
 
     def __repr__(self) -> str:
         args_str = ", ".join(self.args)
-        return f"fact {self.predicate}({args_str})."
+        neg_str = "~" if self.negated else ""
+        return f"fact {neg_str}{self.predicate}({args_str})."
 
 
 class Query(BaseModel):
-    """Query with variables: query parent(alice, X)?"""
+    """Query with variables: query parent(alice, X)? or query ~enemy(alice, X)?"""
 
     predicate: str = Field(..., description="Predicate name (lowercase)")
     args: list[str | None] = Field(..., description="Arguments (None = variable, str = constant)")
+    negated: bool = Field(default=False, description="True if this is a negative query (~)")
 
     def __repr__(self) -> str:
         args_str = ", ".join(str(arg) if arg is not None else "?" for arg in self.args)
-        return f"query {self.predicate}({args_str})?"
+        neg_str = "~" if self.negated else ""
+        return f"query {neg_str}{self.predicate}({args_str})?"
 
     def get_variables(self) -> list[int]:
         """Return positions of variables (0-indexed)."""
@@ -66,14 +70,27 @@ class Atom(BaseModel):
         return len(self.get_variables()) == 0
 
 
-class Rule(BaseModel):
-    """Horn rule: head :- body1, body2, ..."""
+class NAFLiteral(BaseModel):
+    """Negation-as-failure literal: not enemy(X, _)"""
 
-    head: Atom = Field(..., description="Head atom")
-    body: list[Atom] = Field(..., description="Body atoms")
+    atom: Atom = Field(..., description="Atom to negate")
 
     def __repr__(self) -> str:
-        body_str = ", ".join(repr(atom) for atom in self.body)
+        return f"not {repr(self.atom)}"
+
+    def get_variables(self) -> list[str]:
+        """Return list of variable names."""
+        return self.atom.get_variables()
+
+
+class Rule(BaseModel):
+    """Horn rule: head :- body1, body2, not body3, ..."""
+
+    head: Atom = Field(..., description="Head atom")
+    body: list[Atom | NAFLiteral] = Field(..., description="Body atoms and NAF literals")
+
+    def __repr__(self) -> str:
+        body_str = ", ".join(repr(lit) for lit in self.body)
         return f"rule {repr(self.head)} :- {body_str}."
 
 

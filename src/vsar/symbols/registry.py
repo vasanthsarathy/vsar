@@ -1,197 +1,194 @@
-"""Symbol registry for VSAR - manages symbol-to-hypervector mappings."""
+"""Symbol registry managing all typed codebooks for VSAR v2.0.
 
-from pathlib import Path
-from typing import Optional
+The SymbolRegistry provides a central interface for registering symbols
+across all typed symbol spaces and performing typed cleanup operations.
+"""
 
 import jax.numpy as jnp
+from typing import Optional
 
-from vsar.kernel.base import KernelBackend
-
-from .basis import generate_basis, load_basis, save_basis
 from .spaces import SymbolSpace
+from .codebook import TypedCodebook
 
 
 class SymbolRegistry:
     """
-    Central registry for all symbols in VSAR.
+    Central registry managing typed codebooks for all symbol spaces.
 
-    The registry maintains mappings from (space, name) to hypervectors and
-    provides cleanup functionality (reverse lookup via similarity search).
+    The SymbolRegistry creates and manages separate TypedCodebook instances
+    for each symbol space, providing a unified interface for symbol registration
+    and cleanup operations.
 
     Args:
-        backend: Kernel backend for vector operations
-        seed: Random seed for deterministic basis generation
+        dim: Hypervector dimension for all codebooks
+        seed: Base random seed (each codebook gets seed + space_index)
 
     Example:
-        >>> from vsar.kernel import FHRRBackend
-        >>> backend = FHRRBackend(dim=512, seed=42)
-        >>> registry = SymbolRegistry(backend, seed=42)
+        >>> registry = SymbolRegistry(dim=512, seed=42)
+        >>>
+        >>> # Register symbols in different spaces
         >>> alice = registry.register(SymbolSpace.ENTITIES, "alice")
-        >>> bob = registry.register(SymbolSpace.ENTITIES, "bob")
-        >>> # Later, cleanup a noisy vector to find nearest symbol
-        >>> nearest = registry.cleanup(SymbolSpace.ENTITIES, noisy_vec, k=1)
+        >>> parent = registry.register(SymbolSpace.PREDICATES, "parent")
+        >>> arg1 = registry.register(SymbolSpace.ARG_ROLES, "ARG1")
+        >>>
+        >>> # Typed cleanup
+        >>> results = registry.cleanup(SymbolSpace.ENTITIES, noisy_vec, k=3)
     """
 
-    def __init__(self, backend: KernelBackend, seed: int = 42):
-        self.backend = backend
+    def __init__(self, dim: int = 512, seed: int = 42):
+        """Initialize the symbol registry.
+
+        Args:
+            dim: Hypervector dimension for all codebooks
+            seed: Base random seed for reproducibility
+        """
+        self.dim = dim
         self.seed = seed
-        self._basis: dict[tuple[SymbolSpace, str], jnp.ndarray] = {}
+
+        # Create a codebook for each symbol space
+        self._codebooks: dict[SymbolSpace, TypedCodebook] = {}
+
+        for i, space in enumerate(SymbolSpace):
+            # Use different seed for each space to ensure orthogonality
+            space_seed = seed + (i * 10000)
+            self._codebooks[space] = TypedCodebook(space, dim=dim, seed=space_seed)
 
     def register(self, space: SymbolSpace, name: str) -> jnp.ndarray:
         """
-        Register a symbol and get its hypervector.
-
-        If the symbol is already registered, return its existing hypervector.
-        Otherwise, generate a new deterministic basis vector.
+        Register a symbol in a specific symbol space.
 
         Args:
-            space: Symbol space (E, R, A, etc.)
-            name: Symbol name
+            space: The symbol space for this symbol
+            name: Symbol name to register
 
         Returns:
-            Hypervector for the symbol
+            The hypervector for this symbol
 
         Example:
-            >>> vec = registry.register(SymbolSpace.ENTITIES, "alice")
-            >>> vec2 = registry.register(SymbolSpace.ENTITIES, "alice")
-            >>> assert jnp.allclose(vec, vec2)  # Same symbol, same vector
+            >>> registry = SymbolRegistry(dim=512)
+            >>> alice = registry.register(SymbolSpace.ENTITIES, "alice")
+            >>> parent = registry.register(SymbolSpace.PREDICATES, "parent")
         """
-        key = (space, name)
-
-        if key not in self._basis:
-            # Generate new basis vector
-            vec = generate_basis(space, name, self.backend, self.seed)
-            self._basis[key] = vec
-
-        return self._basis[key]
+        return self._codebooks[space].register(name)
 
     def get(self, space: SymbolSpace, name: str) -> Optional[jnp.ndarray]:
         """
-        Get hypervector for a symbol if it exists.
+        Get the vector for a registered symbol.
 
         Args:
-            space: Symbol space
+            space: The symbol space to search
             name: Symbol name
 
         Returns:
-            Hypervector if symbol is registered, None otherwise
+            The hypervector if registered, None otherwise
 
         Example:
+            >>> registry = SymbolRegistry(dim=512)
+            >>> registry.register(SymbolSpace.ENTITIES, "alice")
             >>> vec = registry.get(SymbolSpace.ENTITIES, "alice")
-            >>> if vec is not None:
-            ...     print("Symbol exists")
+            >>> vec is not None
+            True
         """
-        return self._basis.get((space, name))
+        return self._codebooks[space].get(name)
 
     def cleanup(
-        self, space: SymbolSpace, vector: jnp.ndarray, k: int = 10
+        self,
+        space: SymbolSpace,
+        vec: jnp.ndarray,
+        k: int = 1,
+        threshold: float = 0.0
     ) -> list[tuple[str, float]]:
         """
-        Find top-k nearest symbols in a space via similarity search.
+        Perform typed cleanup: find nearest symbols in a specific space.
 
-        This is the "cleanup memory" operation - given a noisy or composite
-        vector, find the most similar symbols in the specified space.
-
-        Args:
-            space: Symbol space to search within
-            vector: Query hypervector
-            k: Number of nearest symbols to return
-
-        Returns:
-            List of (symbol_name, similarity_score) tuples, sorted by similarity
-
-        Example:
-            >>> # After encoding and operations, cleanup to find nearest entity
-            >>> results = registry.cleanup(SymbolSpace.ENTITIES, noisy_vec, k=5)
-            >>> best_match, score = results[0]
-            >>> print(f"Most likely symbol: {best_match} (score: {score:.3f})")
-        """
-        # Get all symbols in the specified space
-        space_symbols = [(name, vec) for (s, name), vec in self._basis.items() if s == space]
-
-        if not space_symbols:
-            return []
-
-        # Compute similarities
-        similarities: list[tuple[str, float]] = []
-        for name, basis_vec in space_symbols:
-            sim = self.backend.similarity(vector, basis_vec)
-            similarities.append((name, sim))
-
-        # Sort by similarity (descending) and return top-k
-        similarities.sort(key=lambda x: x[1], reverse=True)
-        return similarities[:k]
-
-    def symbols(self, space: Optional[SymbolSpace] = None) -> list[str]:
-        """
-        List all registered symbols, optionally filtered by space.
+        This is the key operation for structure-informed decoding. After unbinding
+        to isolate a component, we perform typed cleanup to commit to a discrete symbol.
 
         Args:
-            space: If provided, only return symbols in this space
+            space: The symbol space to search
+            vec: Query hypervector
+            k: Number of nearest neighbors to return
+            threshold: Minimum similarity threshold (0-1 range)
 
         Returns:
-            List of symbol names
+            List of (symbol_name, similarity) tuples, sorted by similarity
 
         Example:
-            >>> all_entities = registry.symbols(SymbolSpace.ENTITIES)
-            >>> all_symbols = registry.symbols()  # All spaces
+            >>> registry = SymbolRegistry(dim=512)
+            >>> registry.register(SymbolSpace.ENTITIES, "alice")
+            >>> registry.register(SymbolSpace.ENTITIES, "bob")
+            >>>
+            >>> # Query with a vector similar to alice
+            >>> results = registry.cleanup(SymbolSpace.ENTITIES, alice_vec, k=2)
+            >>> results[0][0]  # Should be 'alice'
+            'alice'
         """
-        if space is None:
-            return [name for (_, name) in self._basis.keys()]
+        return self._codebooks[space].cleanup(vec, k=k, threshold=threshold)
+
+    def contains(self, space: SymbolSpace, name: str) -> bool:
+        """
+        Check if a symbol is registered in a space.
+
+        Args:
+            space: The symbol space to check
+            name: Symbol name
+
+        Returns:
+            True if the symbol is registered in this space
+
+        Example:
+            >>> registry = SymbolRegistry(dim=512)
+            >>> registry.register(SymbolSpace.ENTITIES, "alice")
+            >>> registry.contains(SymbolSpace.ENTITIES, "alice")
+            True
+            >>> registry.contains(SymbolSpace.PREDICATES, "alice")
+            False
+        """
+        return name in self._codebooks[space]
+
+    def get_codebook(self, space: SymbolSpace) -> TypedCodebook:
+        """
+        Get the codebook for a specific symbol space.
+
+        Args:
+            space: The symbol space
+
+        Returns:
+            The TypedCodebook for this space
+
+        Example:
+            >>> registry = SymbolRegistry(dim=512)
+            >>> entities = registry.get_codebook(SymbolSpace.ENTITIES)
+            >>> entities.register("alice")
+        """
+        return self._codebooks[space]
+
+    def symbol_count(self, space: Optional[SymbolSpace] = None) -> int:
+        """
+        Get the number of registered symbols.
+
+        Args:
+            space: If provided, count symbols in this space only.
+                   If None, count symbols across all spaces.
+
+        Returns:
+            Number of registered symbols
+
+        Example:
+            >>> registry = SymbolRegistry(dim=512)
+            >>> registry.register(SymbolSpace.ENTITIES, "alice")
+            >>> registry.register(SymbolSpace.PREDICATES, "parent")
+            >>> registry.symbol_count()
+            2
+            >>> registry.symbol_count(SymbolSpace.ENTITIES)
+            1
+        """
+        if space is not None:
+            return len(self._codebooks[space])
         else:
-            return [name for (s, name) in self._basis.keys() if s == space]
+            return sum(len(codebook) for codebook in self._codebooks.values())
 
-    def count(self, space: Optional[SymbolSpace] = None) -> int:
-        """
-        Count registered symbols, optionally filtered by space.
-
-        Args:
-            space: If provided, only count symbols in this space
-
-        Returns:
-            Number of symbols
-
-        Example:
-            >>> num_entities = registry.count(SymbolSpace.ENTITIES)
-            >>> total_symbols = registry.count()
-        """
-        if space is None:
-            return len(self._basis)
-        else:
-            return sum(1 for (s, _) in self._basis.keys() if s == space)
-
-    def save(self, path: Path) -> None:
-        """
-        Save registry to HDF5 file.
-
-        Args:
-            path: Path to save basis file
-
-        Example:
-            >>> registry.save(Path("vsar_basis.h5"))
-        """
-        save_basis(path, self._basis)
-
-    def load(self, path: Path) -> None:
-        """
-        Load registry from HDF5 file.
-
-        This replaces the current basis with the loaded one.
-
-        Args:
-            path: Path to basis file
-
-        Example:
-            >>> registry.load(Path("vsar_basis.h5"))
-        """
-        self._basis = load_basis(path)
-
-    def clear(self) -> None:
-        """
-        Clear all registered symbols.
-
-        Example:
-            >>> registry.clear()
-            >>> assert registry.count() == 0
-        """
-        self._basis.clear()
+    def __repr__(self) -> str:
+        """Return a string representation."""
+        total = self.symbol_count()
+        return f"SymbolRegistry({total} symbols across {len(SymbolSpace)} spaces, dim={self.dim})"

@@ -1,5 +1,5 @@
 // VSARL Grammar (Lark EBNF)
-// Specification: VSAR Phase 1 - Facts, Queries, Directives
+// Specification: VSAR Phase 0-3 - Facts, Queries, Directives, Rules, Negation
 
 start: statement*
 
@@ -14,15 +14,25 @@ params: param ("," param)*
 param: IDENTIFIER "=" value
 value: NUMBER | STRING | IDENTIFIER | TRUE | FALSE
 
-// Facts: fact parent(alice, bob).
-fact: "fact" atom "."
+// Facts: fact parent(alice, bob). or fact ~enemy(alice, bob).
+fact: "fact" negated_atom "."
+    | "fact" atom "."
+
+// Negated atom: ~predicate(...)
+negated_atom: "~" atom
 
 // Rules: rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+// Rules with NAF: rule safe(X) :- person(X), not enemy(X, Y).
 rule: "rule" atom ":-" body "."
-body: atom ("," atom)*
+body: body_literal ("," body_literal)*
+body_literal: naf_literal | atom
 
-// Queries: query parent(alice, X)?
-query: "query" atom "?"
+// Negation-as-failure: not atom
+naf_literal: "not" atom
+
+// Queries: query parent(alice, X)? or query ~criminal(alice)?
+query: "query" negated_atom "?"
+     | "query" atom "?"
 
 // Atoms: predicate(arg1, arg2, ...)
 atom: predicate "(" args? ")"

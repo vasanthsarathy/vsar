@@ -4,8 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from vsar.encoding.roles import RoleVectorManager
-from vsar.encoding.vsa_encoder import VSAEncoder
+from vsar.encoding.role_filler_encoder import RoleFillerEncoder
 from vsar.kb.persistence import load_kb, save_kb
 from vsar.kb.store import KnowledgeBase
 from vsar.kernel.vsa_backend import FHRRBackend
@@ -31,8 +30,8 @@ class TestPersistence:
         """Test save/load KB preserves retrieval functionality."""
         # Session 1: Create KB and insert facts
         backend1 = FHRRBackend(dim=512, seed=42)
-        registry1 = SymbolRegistry(backend1, seed=42)
-        encoder1 = VSAEncoder(backend1, registry1, seed=42)
+        registry1 = SymbolRegistry(dim=512, seed=42)
+        encoder1 = RoleFillerEncoder(backend1, registry1, seed=42)
         kb1 = KnowledgeBase(backend1)
 
         # Insert facts
@@ -50,9 +49,8 @@ class TestPersistence:
 
         # Session 2: Load KB and verify retrieval works
         backend2 = FHRRBackend(dim=512, seed=42)
-        registry2 = SymbolRegistry(backend2, seed=42)
-        encoder2 = VSAEncoder(backend2, registry2, seed=42)
-        role_manager2 = RoleVectorManager(backend2, seed=42)
+        registry2 = SymbolRegistry(dim=512, seed=42)
+        encoder2 = RoleFillerEncoder(backend2, registry2, seed=42)
 
         # Re-register symbols (in real usage, would save/load registry too)
         for args in facts:
@@ -76,21 +74,21 @@ class TestPersistence:
         """Test save/load basis preserves symbol vectors."""
         # Session 1: Create registry and save basis
         backend1 = FHRRBackend(dim=512, seed=42)
-        registry1 = SymbolRegistry(backend1, seed=42)
+        registry1 = SymbolRegistry(dim=512, seed=42)
 
         # Register symbols
         from vsar.symbols.spaces import SymbolSpace
 
         registry1.register(SymbolSpace.ENTITIES, "alice")
         registry1.register(SymbolSpace.ENTITIES, "bob")
-        registry1.register(SymbolSpace.RELATIONS, "parent")
+        registry1.register(SymbolSpace.PREDICATES, "parent")
 
         # Save basis
         save_basis(temp_basis_file, registry1._basis)
 
         # Session 2: Load basis and verify vectors match
         backend2 = FHRRBackend(dim=512, seed=42)
-        registry2 = SymbolRegistry(backend2, seed=42)
+        registry2 = SymbolRegistry(dim=512, seed=42)
 
         # Load basis
         loaded_basis = load_basis(temp_basis_file)
@@ -111,8 +109,8 @@ class TestPersistence:
         """Test complete save/load workflow: basis + KB."""
         # Session 1: Build and save system
         backend1 = FHRRBackend(dim=512, seed=42)
-        registry1 = SymbolRegistry(backend1, seed=42)
-        encoder1 = VSAEncoder(backend1, registry1, seed=42)
+        registry1 = SymbolRegistry(dim=512, seed=42)
+        encoder1 = RoleFillerEncoder(backend1, registry1, seed=42)
         kb1 = KnowledgeBase(backend1)
 
         # Insert facts
@@ -131,15 +129,14 @@ class TestPersistence:
 
         # Session 2: Load and verify system works
         backend2 = FHRRBackend(dim=512, seed=42)
-        registry2 = SymbolRegistry(backend2, seed=42)
+        registry2 = SymbolRegistry(dim=512, seed=42)
 
         # Load basis
         loaded_basis = load_basis(temp_basis_file)
         registry2._basis = loaded_basis
 
         # Create encoder with loaded registry
-        encoder2 = VSAEncoder(backend2, registry2, seed=42)
-        role_manager2 = RoleVectorManager(backend2, seed=42)
+        encoder2 = RoleFillerEncoder(backend2, registry2, seed=42)
 
         # Load KB
         kb2 = load_kb(backend2, temp_kb_file)
@@ -163,8 +160,8 @@ class TestPersistence:
         """Test that KB can be updated after loading."""
         # Session 1: Create and save KB
         backend1 = FHRRBackend(dim=512, seed=42)
-        registry1 = SymbolRegistry(backend1, seed=42)
-        encoder1 = VSAEncoder(backend1, registry1, seed=42)
+        registry1 = SymbolRegistry(dim=512, seed=42)
+        encoder1 = RoleFillerEncoder(backend1, registry1, seed=42)
         kb1 = KnowledgeBase(backend1)
 
         # Insert initial facts
@@ -175,9 +172,8 @@ class TestPersistence:
 
         # Session 2: Load and add more facts
         backend2 = FHRRBackend(dim=512, seed=42)
-        registry2 = SymbolRegistry(backend2, seed=42)
-        encoder2 = VSAEncoder(backend2, registry2, seed=42)
-        role_manager2 = RoleVectorManager(backend2, seed=42)
+        registry2 = SymbolRegistry(dim=512, seed=42)
+        encoder2 = RoleFillerEncoder(backend2, registry2, seed=42)
 
         # Re-register initial symbols
         encoder2.encode_atom("parent", ["alice", "bob"])
@@ -203,8 +199,8 @@ class TestPersistence:
     def test_multiple_save_load_cycles(self, temp_kb_file: Path) -> None:
         """Test multiple save/load cycles preserve data."""
         backend = FHRRBackend(dim=512, seed=42)
-        registry = SymbolRegistry(backend, seed=42)
-        encoder = VSAEncoder(backend, registry, seed=42)
+        registry = SymbolRegistry(dim=backend.dimension, seed=42)
+        encoder = RoleFillerEncoder(backend, registry, seed=42)
 
         # Cycle 1: Create and save
         kb1 = KnowledgeBase(backend)

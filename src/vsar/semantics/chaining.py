@@ -1,10 +1,12 @@
 """Forward chaining for rule-based derivation."""
 
+import warnings
 from typing import Any
 
 from pydantic import BaseModel, Field
 
-from vsar.language.ast import Rule
+from vsar.language.ast import Atom, NAFLiteral, Rule
+from vsar.reasoning.stratification import check_stratification
 from vsar.semantics.engine import VSAREngine
 
 
@@ -64,6 +66,16 @@ def apply_rules(
     if k is None:
         k = 10
 
+    # Check stratification and warn if non-stratified
+    stratification = check_stratification(rules)
+    if not stratification.is_stratified:
+        warning_msg = (
+            "Warning: Non-stratified program detected. "
+            "Negation-as-failure may have unpredictable semantics.\n"
+            f"{stratification.summary()}"
+        )
+        warnings.warn(warning_msg, UserWarning, stacklevel=2)
+
     iteration = 0
     total_derived = 0
     derived_per_iteration: list[int] = []
@@ -83,7 +95,14 @@ def apply_rules(
         for rule in rules:
             # Semi-naive optimization: skip rule if no body predicates have new facts
             if semi_naive:
-                rule_body_predicates = {atom.predicate for atom in rule.body}
+                # Extract predicates from body (handle both Atoms and NAFLiterals)
+                rule_body_predicates = set()
+                for lit in rule.body:
+                    if isinstance(lit, Atom):
+                        rule_body_predicates.add(lit.predicate)
+                    elif isinstance(lit, NAFLiteral):
+                        rule_body_predicates.add(lit.atom.predicate)
+
                 if not rule_body_predicates.intersection(new_predicates):
                     # No new facts in any body predicate - skip this rule
                     continue

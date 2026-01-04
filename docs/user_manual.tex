@@ -1,0 +1,1258 @@
+\documentclass[11pt,letterpaper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{longtable}
+
+% Colors
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{codeframe}{RGB}{220,220,220}
+\definecolor{keywordcolor}{RGB}{0,0,255}
+\definecolor{commentcolor}{RGB}{0,128,0}
+\definecolor{stringcolor}{RGB}{163,21,21}
+
+% Code listing style
+\lstdefinestyle{vsarl}{
+    language=Prolog,
+    backgroundcolor=\color{codebg},
+    commentstyle=\color{commentcolor},
+    keywordstyle=\color{keywordcolor}\bfseries,
+    stringstyle=\color{stringcolor},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=none,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{codeframe},
+    aboveskip=10pt,
+    belowskip=10pt
+}
+
+\lstdefinestyle{python}{
+    language=Python,
+    backgroundcolor=\color{codebg},
+    commentstyle=\color{commentcolor},
+    keywordstyle=\color{keywordcolor}\bfseries,
+    stringstyle=\color{stringcolor},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=none,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=4,
+    frame=single,
+    rulecolor=\color{codeframe},
+    aboveskip=10pt,
+    belowskip=10pt
+}
+
+\lstset{style=vsarl}
+
+% Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{VSAR User Manual}
+\fancyhead[R]{Version 0.3.3}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Title formatting
+\titleformat{\section}
+  {\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    pdftitle={VSAR User Manual},
+    pdfpagemode=FullScreen,
+}
+
+% Document
+\begin{document}
+
+% Title Page
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+
+    {\Huge\bfseries VSAR User Manual\par}
+    \vspace{0.5cm}
+    {\Large Writing VSARL Programs and Using the VSAR IDE\par}
+    \vspace{2cm}
+
+    {\Large Version 0.3.3\par}
+    \vspace{0.5cm}
+    {\large January 2026\par}
+
+    \vfill
+
+    {\large Vector Symbolic Architecture Reasoner\par}
+    \vspace{0.5cm}
+    {\normalsize A Declarative Language for Approximate Logical Reasoning\par}
+
+    \vfill
+\end{titlepage}
+
+% Table of Contents
+\tableofcontents
+\newpage
+
+% Main Content
+\section{Introduction}
+
+\subsection{What is VSAR?}
+
+VSAR (Vector Symbolic Architecture Reasoner) is a reasoning system that uses high-dimensional vectors to perform logical inference. Unlike traditional logic programming systems (like Prolog), VSAR provides:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Approximate reasoning} with similarity scores
+    \item \textbf{Graceful degradation} under uncertainty
+    \item \textbf{Fast vectorized operations} (GPU-friendly)
+    \item \textbf{Scalable inference} over large knowledge bases
+\end{itemize}
+
+\subsection{What is VSARL?}
+
+VSARL (VSA Reasoning Language) is a declarative language for writing reasoning programs. It looks similar to Prolog/Datalog but uses vector symbolic architectures under the hood.
+
+\subsection{When to Use VSAR}
+
+Use VSAR when you need:
+
+\begin{itemize}[leftmargin=*]
+    \item Logical reasoning with approximate matching
+    \item Tolerance to noisy or incomplete data
+    \item Explainable results with confidence scores
+    \item Fast inference over large fact sets
+    \item Integration with neural/embedding-based systems
+\end{itemize}
+
+\newpage
+\section{Getting Started}
+
+\subsection{Installation}
+
+Install VSAR via pip:
+
+\begin{lstlisting}[style=python, language=bash]
+# Install VSAR
+pip install vsar
+
+# Verify installation
+vsar --version
+\end{lstlisting}
+
+\subsection{Launching the IDE}
+
+Start the VSAR IDE from the command line:
+
+\begin{lstlisting}[style=python, language=bash]
+# Start the VSAR IDE
+vsar-ide
+
+# Or specify a file to open
+vsar-ide examples/02_family_tree.vsar
+\end{lstlisting}
+
+The IDE window will open with three main areas:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Editor} (center): Write your VSARL code
+    \item \textbf{Console} (bottom): View program output and results
+    \item \textbf{Menu bar} (top): File operations and controls
+\end{itemize}
+
+\newpage
+\section{VSARL Language Guide}
+
+\subsection{Program Structure}
+
+Every VSARL program has three main parts:
+
+\begin{lstlisting}
+// 1. DIRECTIVES - Configure the reasoning engine
+@model FHRR(dim=8192, seed=42);
+@beam(width=50);
+@novelty(threshold=0.95);
+
+// 2. FACTS - Ground truths about the world
+fact parent(alice, bob).
+fact parent(bob, charlie).
+
+// 3. RULES - Derive new facts from existing ones
+rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+
+// 4. QUERIES - Ask questions
+query grandparent(alice, X)?
+\end{lstlisting}
+
+\subsection{Directives}
+
+Directives configure how VSAR encodes and retrieves information.
+
+\subsubsection{Model Configuration}
+
+\begin{lstlisting}
+@model FHRR(dim=8192, seed=42);
+\end{lstlisting}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{FHRR}: The VSA backend (Fourier Holographic Reduced Representations)
+    \item \textbf{dim}: Vector dimension (higher = more accurate but slower)
+    \begin{itemize}
+        \item Recommended: 8192 for production, 512-2048 for testing
+    \end{itemize}
+    \item \textbf{seed}: Random seed for reproducibility
+\end{itemize}
+
+\subsubsection{Beam Search}
+
+\begin{lstlisting}
+@beam(width=50);
+\end{lstlisting}
+
+Controls how many candidates are explored during search.
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Higher values} (50-100): Better coverage, slower
+    \item \textbf{Lower values} (10-20): Faster, may miss results
+\end{itemize}
+
+\subsubsection{Novelty Detection}
+
+\begin{lstlisting}
+@novelty(threshold=0.95);
+\end{lstlisting}
+
+Prevents inserting near-duplicate facts.
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Higher values} (0.95-0.99): Stricter duplicate detection
+    \item \textbf{Lower values} (0.7-0.9): More lenient
+\end{itemize}
+
+\subsection{Facts}
+
+Facts are ground truths with no variables.
+
+\subsubsection{Syntax}
+
+\begin{lstlisting}
+fact predicate(arg1, arg2, ..., argN).
+\end{lstlisting}
+
+\subsubsection{Valid Examples}
+
+\begin{lstlisting}
+fact parent(alice, bob).
+fact likes(alice, pizza).
+fact employee(bob, engineering, manager).
+fact popular(inception).
+\end{lstlisting}
+
+\subsubsection{Invalid Examples}
+
+\begin{lstlisting}
+fact parent(alice, bob);     // Wrong: semicolon instead of period
+fact age(alice, 25).          // Wrong: numeric literals not supported
+fact Parent(alice, bob).      // Wrong: predicate must be lowercase
+\end{lstlisting}
+
+\subsubsection{Important Constraints}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Predicates}: Must be lowercase (e.g., \texttt{parent}, \texttt{likes}, \texttt{works\_in})
+    \item \textbf{Constants}: Must be lowercase (e.g., \texttt{alice}, \texttt{bob}, \texttt{engineering})
+    \item \textbf{No numbers}: Use symbolic constants instead (e.g., \texttt{twenty\_five} not \texttt{25})
+    \item \textbf{End with period}: Facts always end with \texttt{.} never \texttt{;}
+\end{itemize}
+
+\subsubsection{Classical Negation}
+
+You can assert negative facts using \texttt{\textasciitilde}:
+
+\begin{lstlisting}
+fact ~enemy(alice, bob).      // Alice is NOT an enemy of Bob
+fact ~likes(charlie, burgers). // Charlie does NOT like burgers
+\end{lstlisting}
+
+\subsection{Rules}
+
+Rules derive new facts from existing ones.
+
+\subsubsection{Syntax}
+
+\begin{lstlisting}
+rule head(X, Y) :- body1(X, Z), body2(Z, Y).
+\end{lstlisting}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Head}: What gets derived (single atom)
+    \item \textbf{Body}: Conditions that must hold (one or more atoms, comma-separated)
+    \item \textbf{Variables}: Uppercase (e.g., \texttt{X}, \texttt{Y}, \texttt{Person}, \texttt{Item})
+\end{itemize}
+
+\subsubsection{Examples}
+
+\textbf{Simple derivation:}
+
+\begin{lstlisting}
+rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+\end{lstlisting}
+
+\textbf{Multiple rules for same predicate:}
+
+\begin{lstlisting}
+rule ancestor(X, Y) :- parent(X, Y).
+rule ancestor(X, Z) :- parent(X, Y), ancestor(Y, Z).
+\end{lstlisting}
+
+\textbf{Multi-body rule:}
+
+\begin{lstlisting}
+rule recommend(User, Item) :-
+    likes(User, Item1),
+    similar(Item1, Item2),
+    genre(Item2, Genre),
+    genre(Item, Genre).
+\end{lstlisting}
+
+\subsubsection{Negation-as-Failure}
+
+Use \texttt{not} to test for absence:
+
+\begin{lstlisting}
+rule safe(Person) :-
+    employee(Person, Dept),
+    not incident(Person, Location).
+\end{lstlisting}
+
+\textbf{Important}: Variables in \texttt{not} atoms should appear elsewhere in the rule body.
+
+\subsubsection{Valid Rules}
+
+\begin{lstlisting}
+rule ancestor(X, Y) :- parent(X, Y).
+rule can_access(X, Resource) :-
+    manages(X, Y), has_access(Y, Resource).
+\end{lstlisting}
+
+\subsubsection{Invalid Rules}
+
+\begin{lstlisting}
+rule ancestor(X, Y) :- parent(X, Y);  // Wrong: semicolon
+rule ancestor(X, Y) :- parent(X, _).  // Wrong: underscore wildcard
+rule ancestor(x, y) :- parent(x, y).  // Wrong: lowercase variables
+\end{lstlisting}
+
+\subsection{Queries}
+
+Queries ask questions about the knowledge base.
+
+\subsubsection{Syntax}
+
+\begin{lstlisting}
+query predicate(constant, X)?
+\end{lstlisting}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Constants}: Lowercase values you know
+    \item \textbf{Variables}: Uppercase unknowns to find
+    \item \textbf{End with ?}: Queries always end with question mark
+\end{itemize}
+
+\subsubsection{Examples}
+
+\textbf{Single-variable query:}
+
+\begin{lstlisting}
+query parent(alice, X)?           // Who are Alice's children?
+query likes(X, pizza)?             // Who likes pizza?
+query employee(X, engineering)?    // Who works in engineering?
+\end{lstlisting}
+
+\textbf{Ground query (yes/no):}
+
+\begin{lstlisting}
+query parent(alice, bob)?          // Is Alice Bob's parent?
+\end{lstlisting}
+
+\textbf{Multiple queries:}
+
+\begin{lstlisting}
+query grandparent(alice, X)?
+query grandparent(X, charlie)?
+query ancestor(alice, X)?
+\end{lstlisting}
+
+\subsubsection{Multi-Variable Queries}
+
+Multi-variable queries are not supported in the IDE. Use the Python API instead:
+
+\begin{lstlisting}[style=python]
+from vsar.language.ast import Query
+result = engine.query(
+    Query(predicate="parent", args=[None, None]),
+    k=10
+)
+\end{lstlisting}
+
+\newpage
+\section{Using the VSAR IDE}
+
+\subsection{IDE Layout}
+
+The IDE consists of three main areas:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Menu bar} (top): File operations and run controls
+    \item \textbf{Editor} (center): Code editing area with syntax highlighting
+    \item \textbf{Console} (bottom): Program output and query results
+\end{itemize}
+
+\subsection{Keyboard Shortcuts}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Shortcut} & \textbf{Action} \\
+\midrule
+F5 & Run program \\
+Ctrl+N & New file \\
+Ctrl+O & Open file \\
+Ctrl+S & Save file \\
+Ctrl+Q & Interactive query dialog \\
+Ctrl+/ & Toggle comment \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Running a Program}
+
+To run a VSARL program:
+
+\begin{enumerate}[leftmargin=*]
+    \item Load or create a program in the editor
+    \item Press \textbf{F5} or click \textbf{Run → Execute Program}
+    \item View results in the console below
+\end{enumerate}
+
+\subsubsection{Example Output}
+
+\begin{lstlisting}[style=python, language=bash]
+========================================
+Parsing program...
+Parsed successfully: 4 facts, 2 queries, 3 rules
+
+Creating engine with directives: @model FHRR(dim=512, seed=42);
+Inserting 4 facts into knowledge base...
+
+Applying 3 rules (forward chaining)...
+Iteration 1: derived 2 new facts
+Iteration 2: derived 1 new facts
+Iteration 3: no new facts (fixpoint reached)
+
+Forward chaining complete: 3 iterations, 3 new facts
+
+Executing 2 queries...
+
+Query 1: grandparent(alice, X)?
+  david (0.91)
+  eve (0.88)
+
+Query 2: ancestor(alice, X)?
+  bob (0.95)
+  charlie (0.94)
+  david (0.87)
+  eve (0.85)
+========================================
+\end{lstlisting}
+
+\subsection{Interactive Query Mode}
+
+To execute queries interactively:
+
+\begin{enumerate}[leftmargin=*]
+    \item Press \textbf{Ctrl+Q} or click \textbf{Run → Interactive Query}
+    \item Enter your query in the dialog (e.g., \texttt{parent(alice, X)?})
+    \item View results in the console
+\end{enumerate}
+
+\subsection{File Operations}
+
+\subsubsection{New File}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Ctrl+N} or \textbf{File → New}
+    \item Creates a blank program with default directives
+\end{itemize}
+
+\subsubsection{Open File}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Ctrl+O} or \textbf{File → Open}
+    \item Browse to \texttt{.vsar} file
+    \item Try the examples in \texttt{examples/} directory
+\end{itemize}
+
+\subsubsection{Save File}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Ctrl+S} or \textbf{File → Save}
+    \item Saves current program
+    \item Auto-adds \texttt{.vsar} extension if missing
+\end{itemize}
+
+\subsection{Syntax Highlighting}
+
+The IDE provides syntax highlighting for:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Keywords}: \texttt{fact}, \texttt{rule}, \texttt{query}, \texttt{not}
+    \item \textbf{Directives}: \texttt{@model}, \texttt{@beam}, \texttt{@novelty}
+    \item \textbf{Comments}: Lines starting with \texttt{//}
+    \item \textbf{Variables}: Uppercase identifiers
+    \item \textbf{Constants}: Lowercase identifiers
+\end{itemize}
+
+\newpage
+\section{Writing Your First Program}
+
+Let's build a simple family tree reasoning system step by step.
+
+\subsection{Step 1: Create a New File}
+
+\begin{enumerate}[leftmargin=*]
+    \item Launch VSAR IDE: \texttt{vsar-ide}
+    \item Press \textbf{Ctrl+N} for new file
+\end{enumerate}
+
+\subsection{Step 2: Add Directives}
+
+\begin{lstlisting}
+@model FHRR(dim=512, seed=42);
+@beam(width=50);
+@novelty(threshold=0.95);
+\end{lstlisting}
+
+\subsection{Step 3: Add Facts}
+
+\begin{lstlisting}
+// Parent relationships
+fact parent(alice, bob).
+fact parent(alice, charlie).
+fact parent(bob, david).
+fact parent(charlie, eve).
+
+// Gender facts
+fact male(bob).
+fact male(david).
+fact female(alice).
+fact female(charlie).
+fact female(eve).
+\end{lstlisting}
+
+\subsection{Step 4: Add Rules}
+
+\begin{lstlisting}
+// Grandparent: X is grandparent of Z if X is parent of Y
+// and Y is parent of Z
+rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+
+// Ancestor: Base case - direct parent
+rule ancestor(X, Y) :- parent(X, Y).
+
+// Ancestor: Recursive case - parent of ancestor
+rule ancestor(X, Z) :- parent(X, Y), ancestor(Y, Z).
+
+// Grandmother: Female grandparent
+rule grandmother(X, Z) :- grandparent(X, Z), female(X).
+\end{lstlisting}
+
+\subsection{Step 5: Add Queries}
+
+\begin{lstlisting}
+query grandparent(alice, X)?     // Who are Alice's grandchildren?
+query ancestor(alice, X)?         // Who are Alice's descendants?
+query grandmother(X, eve)?        // Who is Eve's grandmother?
+\end{lstlisting}
+
+\subsection{Step 6: Run the Program}
+
+Press \textbf{F5} to execute.
+
+\subsubsection{Expected Output}
+
+\begin{lstlisting}[style=python, language=bash]
+Query 1: grandparent(alice, X)?
+  david (0.92)
+  eve (0.91)
+
+Query 2: ancestor(alice, X)?
+  bob (0.95)
+  charlie (0.94)
+  david (0.88)
+  eve (0.87)
+
+Query 3: grandmother(X, eve)?
+  alice (0.89)
+\end{lstlisting}
+
+\subsection{Step 7: Save Your Program}
+
+\begin{enumerate}[leftmargin=*]
+    \item Press \textbf{Ctrl+S}
+    \item Name it \texttt{my\_family\_tree.vsar}
+    \item Save in your working directory
+\end{enumerate}
+
+\newpage
+\section{Common Patterns}
+
+\subsection{Pattern 1: Transitive Closure}
+
+Computing transitive relationships (e.g., "can reach from X to Y"):
+
+\begin{lstlisting}
+// Direct connection
+fact connected(a, b).
+fact connected(b, c).
+fact connected(c, d).
+
+// Reachability: base case
+rule reachable(X, Y) :- connected(X, Y).
+
+// Reachability: transitive case
+rule reachable(X, Z) :- connected(X, Y), reachable(Y, Z).
+
+query reachable(a, X)?  // Everything reachable from 'a'
+\end{lstlisting}
+
+\subsection{Pattern 2: Hierarchies}
+
+Modeling organizational or taxonomic hierarchies:
+
+\begin{lstlisting}
+// Organizational structure
+fact reports_to(alice, bob).
+fact reports_to(bob, charlie).
+fact reports_to(david, charlie).
+
+// Direct manager
+rule manager(Manager, Employee) :- reports_to(Employee, Manager).
+
+// Transitive supervision
+rule supervises(X, Y) :- manager(X, Y).
+rule supervises(X, Z) :- manager(X, Y), supervises(Y, Z).
+
+query supervises(charlie, X)?  // Everyone Charlie supervises
+\end{lstlisting}
+
+\subsection{Pattern 3: Classification}
+
+Deriving categories from properties:
+
+\begin{lstlisting}
+// Movie facts
+fact genre(inception, scifi).
+fact genre(matrix, scifi).
+fact genre(avatar, scifi).
+fact rating(inception, high).
+fact rating(matrix, high).
+
+// Classify as recommended
+rule recommended(Movie) :-
+    genre(Movie, scifi),
+    rating(Movie, high).
+
+query recommended(X)?  // All recommended sci-fi movies
+\end{lstlisting}
+
+\subsection{Pattern 4: Collaborative Filtering}
+
+Finding similar entities based on shared properties:
+
+\begin{lstlisting}
+// User preferences
+fact likes(alice, inception).
+fact likes(alice, matrix).
+fact likes(bob, inception).
+fact likes(bob, interstellar).
+
+// Similar taste
+rule similar_taste(X, Y) :-
+    likes(X, Item),
+    likes(Y, Item).
+
+// Recommendations
+rule might_like(User, Item) :-
+    similar_taste(User, OtherUser),
+    likes(OtherUser, Item),
+    not likes(User, Item).
+
+query similar_taste(alice, X)?  // Similar taste to Alice?
+query might_like(alice, X)?      // What might Alice like?
+\end{lstlisting}
+
+\subsection{Pattern 5: Access Control}
+
+Security policies with negation:
+
+\begin{lstlisting}
+// Access permissions
+fact has_access(alice, server_room).
+fact has_access(bob, lab).
+
+// Incidents
+fact incident(server_room, thursday).
+
+// Trusted relationships
+fact trusted(alice, bob).
+
+// Suspect: has access but not trusted
+rule suspect(Person, Location) :-
+    has_access(Person, Location),
+    incident(Location, Day),
+    not trusted(Person, Anyone).
+
+query suspect(X, server_room)?
+\end{lstlisting}
+
+\newpage
+\section{Advanced Features}
+
+\subsection{Multi-Variable Queries}
+
+While the IDE supports single-variable queries, you can use the Python API for multi-variable retrieval:
+
+\begin{lstlisting}[style=python]
+from vsar.language.parser import parse
+from vsar.semantics.engine import VSAREngine
+from vsar.language.ast import Query
+
+# Load program
+with open("my_program.vsar") as f:
+    program = parse(f.read())
+
+# Create engine
+engine = VSAREngine(program.directives)
+
+# Insert facts
+for fact in program.facts:
+    engine.insert_fact(fact)
+
+# Multi-variable query: find ALL parent-child pairs
+result = engine.query(
+    Query(predicate="parent", args=[None, None]),
+    k=10
+)
+
+for (parent, child), score in result.results:
+    print(f"{parent} -> {child} (score: {score:.2f})")
+\end{lstlisting}
+
+\subsection{Backward Chaining}
+
+Goal-directed proof search (alternative to forward chaining):
+
+\begin{lstlisting}[style=python]
+from vsar.reasoning.backward_chaining import BackwardChainer
+from vsar.language.ast import Atom
+
+# Create backward chainer
+chainer = BackwardChainer(
+    engine,
+    rules=program.rules,
+    max_depth=5,
+    threshold=0.5
+)
+
+# Prove a specific goal
+goal = Atom(predicate="ancestor", args=["alice", "eve"])
+proofs = chainer.prove_goal(goal)
+
+for proof in proofs:
+    print(f"Proof: {proof.substitution}")
+    print(f"Similarity: {proof.similarity:.2f}")
+\end{lstlisting}
+
+\subsection{Understanding Similarity Scores}
+
+Every result comes with a similarity score (0-1):
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{1.0}: Perfect match (exact fact in KB)
+    \item \textbf{0.9-0.99}: Very high confidence
+    \item \textbf{0.7-0.89}: Good confidence
+    \item \textbf{0.5-0.69}: Moderate confidence
+    \item \textbf{< 0.5}: Low confidence (usually filtered out)
+\end{itemize}
+
+\textbf{What affects scores:}
+
+\begin{itemize}[leftmargin=*]
+    \item Direct facts: $\sim$0.95-1.0
+    \item One-hop derivations: $\sim$0.85-0.95
+    \item Multi-hop derivations: $\sim$0.7-0.9 (degrades with depth)
+    \item High beam width improves accuracy
+\end{itemize}
+
+\newpage
+\section{Troubleshooting}
+
+\subsection{Common Errors}
+
+\subsubsection{Error: "No terminal matches '0'"}
+
+\textbf{Problem}: Used numeric literals
+
+\begin{lstlisting}
+fact age(alice, 25).  // WRONG
+\end{lstlisting}
+
+\textbf{Solution}: Use symbolic constants
+
+\begin{lstlisting}
+fact age(alice, twenty_five).  // CORRECT
+\end{lstlisting}
+
+\subsubsection{Error: "Expected: DOT"}
+
+\textbf{Problem}: Used semicolon instead of period
+
+\begin{lstlisting}
+fact parent(alice, bob);  // WRONG
+rule ancestor(X, Y) :- parent(X, Y);  // WRONG
+\end{lstlisting}
+
+\textbf{Solution}: Use period
+
+\begin{lstlisting}
+fact parent(alice, bob).  // CORRECT
+rule ancestor(X, Y) :- parent(X, Y).  // CORRECT
+\end{lstlisting}
+
+\subsubsection{Error: "No terminal matches '?'"}
+
+\textbf{Problem}: Used \texttt{?} wildcard in query
+
+\begin{lstlisting}
+query parent(?, ?)?  // WRONG
+\end{lstlisting}
+
+\textbf{Solution}: Use variables for single-variable queries
+
+\begin{lstlisting}
+query parent(alice, X)?  // CORRECT (single variable)
+\end{lstlisting}
+
+For multi-variable queries, use the Python API.
+
+\subsubsection{Error: "Expected: UPPER\_NAME"}
+
+\textbf{Problem}: Used lowercase for variable or underscore wildcard
+
+\begin{lstlisting}
+rule ancestor(x, y) :- parent(x, y).  // WRONG
+rule safe(X) :- person(X), not enemy(X, _).  // WRONG
+\end{lstlisting}
+
+\textbf{Solution}: Use uppercase variables
+
+\begin{lstlisting}
+rule ancestor(X, Y) :- parent(X, Y).  // CORRECT
+rule safe(X) :- person(X), not enemy(X, Person).  // CORRECT
+\end{lstlisting}
+
+\subsection{IDE Not Starting}
+
+\textbf{Problem}: \texttt{vsar-ide} command not found
+
+\textbf{Solution}:
+
+\begin{lstlisting}[style=python, language=bash]
+# Reinstall VSAR
+pip install --upgrade vsar
+
+# Or install in development mode
+pip install -e .
+\end{lstlisting}
+
+\subsection{No Results for Query}
+
+Possible causes:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Typo in predicate name}
+
+\begin{lstlisting}
+fact Parent(alice, bob).  // Wrong: uppercase predicate
+query parent(alice, X)?    // Won't match
+\end{lstlisting}
+
+    \item \textbf{Facts not matching query}
+
+\begin{lstlisting}
+fact parent(alice, bob).
+query parent(bob, alice)?  // Returns nothing (wrong direction)
+\end{lstlisting}
+
+    \item \textbf{Rules not firing (missing facts)}
+
+\begin{lstlisting}
+rule grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+// If no parent facts exist, rule never fires
+\end{lstlisting}
+
+    \item \textbf{Beam width too low}
+
+\begin{lstlisting}
+@beam(width=5);  // Try increasing to 50
+\end{lstlisting}
+\end{enumerate}
+
+\subsection{Low Similarity Scores}
+
+If you're getting unexpectedly low scores (< 0.7):
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Increase vector dimension}
+
+\begin{lstlisting}
+@model FHRR(dim=8192, seed=42);  // Higher = more accurate
+\end{lstlisting}
+
+    \item \textbf{Increase beam width}
+
+\begin{lstlisting}
+@beam(width=100);  // Explore more candidates
+\end{lstlisting}
+
+    \item \textbf{Check for deep derivations}
+    \begin{itemize}
+        \item Multi-hop rules naturally have lower scores
+        \item This is expected behavior (approximate reasoning)
+    \end{itemize}
+\end{enumerate}
+
+\newpage
+\section{Quick Reference}
+
+\subsection{Valid Identifiers}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Type} & \textbf{Case} & \textbf{Examples} \\
+\midrule
+Predicate & lowercase & \texttt{parent}, \texttt{likes}, \texttt{works\_in} \\
+Constant & lowercase & \texttt{alice}, \texttt{bob}, \texttt{engineering} \\
+Variable & uppercase & \texttt{X}, \texttt{Y}, \texttt{Person}, \texttt{Item} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Syntax Summary}
+
+\begin{lstlisting}
+// Directives (at top of file)
+@model FHRR(dim=8192, seed=42);
+@beam(width=50);
+@novelty(threshold=0.95);
+
+// Facts (end with period)
+fact predicate(const1, const2).
+fact ~negative(const1, const2).
+
+// Rules (end with period)
+rule head(X, Y) :- body1(X, Z), body2(Z, Y).
+rule head(X, Y) :- body1(X, Z), not body2(Z, Y).
+
+// Queries (end with question mark)
+query predicate(const, X)?
+query predicate(X, const)?
+\end{lstlisting}
+
+\subsection{Common Directives}
+
+\begin{lstlisting}
+// Testing (small/fast)
+@model FHRR(dim=512, seed=42);
+
+// Development (medium)
+@model FHRR(dim=2048, seed=42);
+
+// Production (large/accurate)
+@model FHRR(dim=8192, seed=42);
+
+// Beam width
+@beam(width=10);   // Fast, may miss results
+@beam(width=50);   // Balanced (recommended)
+@beam(width=100);  // Thorough, slower
+
+// Novelty threshold
+@novelty(threshold=0.7);   // Lenient duplicate detection
+@novelty(threshold=0.95);  // Strict (recommended)
+@novelty(threshold=0.99);  // Very strict
+\end{lstlisting}
+
+\subsection{IDE Shortcuts}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Shortcut} & \textbf{Action} \\
+\midrule
+F5 & Run program \\
+Ctrl+N & New file \\
+Ctrl+O & Open file \\
+Ctrl+S & Save file \\
+Ctrl+Q & Interactive query \\
+Ctrl+/ & Toggle comment \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Example Programs}
+
+VSAR includes 12 example programs in the \texttt{examples/} directory:
+
+\begin{longtable}{p{5.5cm}p{8cm}}
+\toprule
+\textbf{File} & \textbf{Description} \\
+\midrule
+\endhead
+\texttt{00\_getting\_started.vsar} & Beginner introduction \\
+\texttt{01\_basic\_rules.vsar} & Simple derivation \\
+\texttt{02\_family\_tree.vsar} & Classic Prolog example \\
+\texttt{03\_transitive\_closure.vsar} & Recursive rules \\
+\texttt{04\_organizational\_hierarchy.vsar} & Hierarchies \\
+\texttt{05\_knowledge\_graph.vsar} & Multiple relations \\
+\texttt{06\_academic\_network.vsar} & Complex interactions \\
+\texttt{07\_negation.vsar} & Negation-as-failure \\
+\texttt{08\_multi\_variable\_queries.vsar} & Multi-variable concepts \\
+\texttt{09\_backward\_chaining.vsar} & Goal-directed search \\
+\texttt{10\_advanced\_reasoning.vsar} & Enterprise security \\
+\texttt{11\_recommendation\_system.vsar} & Collaborative filtering \\
+\bottomrule
+\end{longtable}
+
+\newpage
+\section{Tips and Best Practices}
+
+\subsection{Start Simple}
+
+Begin with ground facts and single-variable queries:
+
+\begin{lstlisting}
+fact parent(alice, bob).
+query parent(alice, X)?
+\end{lstlisting}
+
+Then add rules incrementally.
+
+\subsection{Use Descriptive Names}
+
+\textbf{Good:}
+
+\begin{lstlisting}
+fact employee(alice, engineering).
+rule can_access(User, Resource) :- ...
+\end{lstlisting}
+
+\textbf{Bad:}
+
+\begin{lstlisting}
+fact e(a, eng).
+rule ca(U, R) :- ...
+\end{lstlisting}
+
+\subsection{Comment Your Code}
+
+\begin{lstlisting}
+// User preferences - movies they've watched
+fact likes(alice, inception).
+fact likes(alice, matrix).
+
+// Collaborative filtering: users with similar taste
+rule similar_taste(X, Y) :- likes(X, Item), likes(Y, Item).
+\end{lstlisting}
+
+\subsection{Test Incrementally}
+
+Don't write everything at once. Test after adding:
+
+\begin{itemize}[leftmargin=*]
+    \item Facts only
+    \item One rule at a time
+    \item One query at a time
+\end{itemize}
+
+\subsection{Check Similarity Scores}
+
+If scores are unexpectedly low:
+
+\begin{itemize}[leftmargin=*]
+    \item Increase dimension (\texttt{dim=8192})
+    \item Increase beam width (\texttt{width=100})
+    \item Check for multi-hop derivations (naturally lower scores)
+\end{itemize}
+
+\subsection{Use the Examples}
+
+Learn from the 12 included examples:
+
+\begin{lstlisting}[style=python, language=bash]
+vsar-ide examples/02_family_tree.vsar
+\end{lstlisting}
+
+Study the patterns and adapt them to your use case.
+
+\subsection{Understand Approximate Reasoning}
+
+VSAR is \textbf{not} exact like Prolog:
+
+\begin{itemize}[leftmargin=*]
+    \item Results have confidence scores
+    \item Multi-hop inference degrades gracefully
+    \item This is a feature, not a bug!
+\end{itemize}
+
+Use it when you need:
+
+\begin{itemize}[leftmargin=*]
+    \item Noise tolerance
+    \item Similarity-based matching
+    \item Scalable inference
+\end{itemize}
+
+\newpage
+\section{Getting Help}
+
+\subsection{Documentation}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{User Manual}: \texttt{docs/user\_manual.pdf} (this document)
+    \item \textbf{IDE Status}: \texttt{VSAR\_IDE\_AND\_EXAMPLES\_UPDATE.md}
+    \item \textbf{Implementation Plan}: \texttt{IMPLEMENTATION\_PLAN.md}
+    \item \textbf{API Docs}: See \texttt{src/vsar/} docstrings
+\end{itemize}
+
+\subsection{Examples}
+
+Load and study the 12 example programs in \texttt{examples/}:
+
+\begin{lstlisting}[style=python, language=bash]
+ls examples/*.vsar
+\end{lstlisting}
+
+\subsection{Command-Line Help}
+
+\begin{lstlisting}[style=python, language=bash]
+vsar --help
+vsar-ide --help
+\end{lstlisting}
+
+\subsection{Issues and Feedback}
+
+Report issues at: \url{https://github.com/anthropics/vsar/issues}
+
+\newpage
+\section{Appendix: Complete Example}
+
+Here's a complete, working program demonstrating multiple features:
+
+\begin{lstlisting}
+// ====================================================
+// Movie Recommendation System
+// ====================================================
+
+@model FHRR(dim=8192, seed=42);
+@beam(width=50);
+@novelty(threshold=0.95);
+
+// User preferences
+fact likes(alice, inception).
+fact likes(alice, matrix).
+fact likes(alice, interstellar).
+fact likes(bob, inception).
+fact likes(bob, matrix).
+fact likes(charlie, interstellar).
+fact likes(charlie, arrival).
+
+// Movie metadata
+fact genre(inception, scifi).
+fact genre(matrix, scifi).
+fact genre(interstellar, scifi).
+fact genre(arrival, scifi).
+fact director(inception, nolan).
+fact director(interstellar, nolan).
+fact director(arrival, villeneuve).
+
+// Collaborative filtering
+rule similar_taste(X, Y) :-
+    likes(X, Item),
+    likes(Y, Item).
+
+// Content-based recommendation
+rule might_like(User, Movie) :-
+    likes(User, KnownMovie),
+    genre(KnownMovie, Genre),
+    genre(Movie, Genre),
+    not likes(User, Movie).
+
+// Director-based recommendation
+rule recommend_by_director(User, Movie) :-
+    likes(User, KnownMovie),
+    director(KnownMovie, Dir),
+    director(Movie, Dir),
+    not likes(User, Movie).
+
+// Queries
+query similar_taste(alice, X)?
+query might_like(alice, X)?
+query recommend_by_director(alice, X)?
+\end{lstlisting}
+
+Save this as \texttt{recommendations.vsar}, press \textbf{F5}, and explore!
+
+\vfill
+
+\begin{center}
+\textbf{End of User Manual}
+
+For the latest updates and documentation, visit:
+
+\url{https://github.com/anthropics/vsar}
+\end{center}
+
+\end{document}

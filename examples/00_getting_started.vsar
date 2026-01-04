@@ -1,0 +1,177 @@
+// Example 00: Getting Started with VSAR
+// A gentle introduction to VSAR's key concepts and syntax.
+
+// ============================================================================
+// STEP 1: Configuration Directives
+// ============================================================================
+
+// Every VSAR program starts with configuration directives
+// These tell the engine how to encode and retrieve information
+
+@model FHRR(dim=8192, seed=42);
+// - FHRR: Fourier Holographic Reduced Representations (fast, accurate)
+// - dim: Vector dimension (higher = more accurate, but slower)
+// - seed: Random seed for reproducibility
+
+@beam(width=50);
+// Beam width for search: how many candidates to explore
+// Higher = better coverage but slower
+
+@novelty(threshold=0.95);
+// Similarity threshold for duplicate detection
+// Facts more similar than this are considered duplicates
+
+// ============================================================================
+// STEP 2: Inserting Facts
+// ============================================================================
+
+// Facts are ground truths about the world
+// Syntax: fact predicate(arg1, arg2, ...)
+
+fact likes(alice, pizza).
+fact likes(alice, pasta).
+fact likes(bob, pizza).
+fact likes(bob, burgers).
+fact likes(charlie, sushi).
+
+// Predicates can have any number of arguments (arity)
+// Note: VSAR doesn't support numeric literals yet, so we use symbolic constants
+fact age(alice, twenty_five).
+fact age(bob, thirty).
+fact age(charlie, twenty_eight).
+
+// Binary predicates are most common
+fact friend(alice, bob).
+fact friend(bob, charlie).
+
+// ============================================================================
+// STEP 3: Simple Queries
+// ============================================================================
+
+// Queries ask questions about the knowledge base
+// Use '?' to mark unknown values (variables)
+// Syntax: query predicate(arg1, ?, ..., argN)?
+
+// Who does Alice like?
+query likes(alice, X)?
+// Returns: pizza, pasta
+
+// Who likes pizza?
+query likes(X, pizza)?
+// Returns: alice, bob
+
+// How old is Bob?
+query age(bob, X)?
+// Returns: thirty
+
+// ============================================================================
+// STEP 4: Multi-Variable Queries (NEW!)
+// ============================================================================
+
+// Multi-variable queries are currently available via the Python API only
+// They use "successive interference cancellation" to decode multiple unknowns
+//
+// Example Python code:
+// from vsar.language.ast import Query
+// result = engine.query(Query(predicate="likes", args=[None, None]), k=10)
+// Returns: (alice, pizza), (alice, pasta), (bob, pizza), etc.
+//
+// result = engine.query(Query(predicate="age", args=[None, None]), k=10)
+// Returns: (alice, twenty_five), (bob, thirty), (charlie, twenty_eight)
+
+// ============================================================================
+// STEP 5: Rules for Inference
+// ============================================================================
+
+// Rules derive new facts from existing ones
+// Syntax: rule head(X, Y) :- body1(X), body2(Y, Z), ...
+
+// If two people like the same thing, they have common interest
+rule has_common_interest(X, Y) :- likes(X, Food), likes(Y, Food).
+
+// Transitive friendship: Friend of a friend
+rule connected(X, Z) :- friend(X, Y), friend(Y, Z).
+
+// Age group classification with explicit facts
+// (Comparisons like Age < 28 not yet supported in VSARL)
+fact young(alice).
+fact young(charlie).
+
+// Query using derived facts
+query has_common_interest(alice, X)?
+// Returns: bob (both like pizza)
+
+query connected(alice, X)?
+// Returns: charlie (alice->bob->charlie)
+
+// ============================================================================
+// STEP 6: Understanding Results
+// ============================================================================
+
+// Each result comes with a SIMILARITY SCORE (0-1)
+// This measures confidence in the answer:
+//
+// - 1.0 = Perfect match (exact fact in KB)
+// - 0.9-0.99 = Very high confidence
+// - 0.7-0.89 = Good confidence
+// - 0.5-0.69 = Moderate confidence
+// - <0.5 = Low confidence (filtered out by threshold)
+
+// VSAR is APPROXIMATE, not exact:
+// - Handles typos and variations gracefully
+// - May return near-matches in noisy data
+// - Provides confidence scores instead of binary yes/no
+
+// ============================================================================
+// STEP 7: Classical Negation (NEW!)
+// ============================================================================
+
+// You can assert negative facts using ~
+fact ~likes(charlie, burgers).    // Charlie does NOT like burgers
+
+// Query still works
+query likes(charlie, X)?
+// Returns: sushi (burgers filtered out by negative fact)
+
+// ============================================================================
+// WHAT MAKES VSAR DIFFERENT?
+// ============================================================================
+
+// 1. **Vector-Based Representation**
+//    - Facts stored as high-dimensional vectors
+//    - Enables approximate matching and noise tolerance
+//    - All operations are vectorized (fast, GPU-friendly)
+//
+// 2. **Approximate Reasoning**
+//    - Unlike Prolog/SQL: doesn't require exact matches
+//    - Similarity scores measure confidence
+//    - Graceful degradation under uncertainty
+//
+// 3. **Multi-Variable Support**
+//    - Retrieve multiple unknowns in one query
+//    - 100% accuracy via interference cancellation
+//    - More flexible than traditional systems
+//
+// 4. **Scalability**
+//    - Query time independent of KB size (with indexing)
+//    - Handles 100K+ facts efficiently
+//    - Parallel execution on GPU
+
+// ============================================================================
+// NEXT STEPS
+// ============================================================================
+
+// Explore these examples in order:
+// 01_basic_rules.vsar       - Simple rule derivation
+// 02_family_tree.vsar       - Classic Prolog-style examples
+// 03_transitive_closure.vsar - Recursive rules
+// 04_organizational_hierarchy.vsar - Real-world hierarchies
+// 05_knowledge_graph.vsar   - Multiple relation types
+// 06_academic_network.vsar  - Complex interactions
+// 07_negation.vsar          - Negation-as-failure
+// 08_multi_variable_queries.vsar - Advanced retrieval
+// 09_backward_chaining.vsar - Goal-directed proof search
+// 10_advanced_reasoning.vsar - Multi-mode reasoning
+// 11_recommendation_system.vsar - Practical application
+
+// Happy reasoning! 🚀

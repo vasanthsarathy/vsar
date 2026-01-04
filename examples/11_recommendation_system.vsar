@@ -1,0 +1,179 @@
+// Example 11: Recommendation System with Collaborative Filtering
+// This example shows how VSAR can be used for practical recommendation tasks
+// using approximate relational reasoning over user preferences.
+
+@model FHRR(dim=8192, seed=42);
+@beam(width=50);
+@novelty(threshold=0.95);
+
+// ============================================================================
+// USER PREFERENCES: Users and what they like
+// ============================================================================
+
+// Movies
+fact likes(alice, inception).
+fact likes(alice, matrix).
+fact likes(alice, interstellar).
+fact likes(bob, inception).
+fact likes(bob, matrix).
+fact likes(bob, dark_knight).
+fact likes(charlie, interstellar).
+fact likes(charlie, arrival).
+fact likes(charlie, blade_runner).
+fact likes(david, matrix).
+fact likes(david, dark_knight).
+fact likes(david, inception).
+
+// Books
+fact likes(alice, dune).
+fact likes(alice, foundation).
+fact likes(bob, neuromancer).
+fact likes(charlie, dune).
+fact likes(charlie, hyperion).
+
+// Music
+fact likes(alice, radiohead).
+fact likes(bob, pink_floyd).
+fact likes(charlie, radiohead).
+fact likes(david, pink_floyd).
+
+// ============================================================================
+// CONTENT METADATA: Item properties
+// ============================================================================
+
+// Movie genres
+fact genre(inception, scifi).
+fact genre(matrix, scifi).
+fact genre(interstellar, scifi).
+fact genre(arrival, scifi).
+fact genre(blade_runner, scifi).
+fact genre(dark_knight, action).
+
+// Directors
+fact directed_by(inception, nolan).
+fact directed_by(interstellar, nolan).
+fact directed_by(dark_knight, nolan).
+fact directed_by(matrix, wachowski).
+fact directed_by(arrival, villeneuve).
+fact directed_by(blade_runner, villeneuve).
+
+// ============================================================================
+// RECOMMENDATION RULES
+// ============================================================================
+
+// Collaborative filtering: If X and Y like the same items, they have similar taste
+rule similar_taste(X, Y) :- likes(X, Item), likes(Y, Item).
+
+// Content-based: Recommend items with same genre
+rule might_like(User, Item) :-
+    likes(User, OtherItem),
+    genre(OtherItem, Genre),
+    genre(Item, Genre).
+
+// Director-based: People who like one Nolan film might like others
+rule recommend_by_director(User, NewItem) :-
+    likes(User, KnownItem),
+    directed_by(KnownItem, Director),
+    directed_by(NewItem, Director).
+
+// Cold start: Recommend popular items (most liked)
+// Note: This requires aggregation (future feature)
+// For now, we use explicit popularity facts
+fact popular(inception).
+fact popular(matrix).
+rule recommend_popular(User, Item) :- popular(Item), not likes(User, Item).
+
+// ============================================================================
+// QUERIES: Finding recommendations
+// ============================================================================
+
+// Find users with similar taste to Alice
+query similar_taste(alice, X)?
+// Expected: bob (both like inception, matrix)
+//          charlie (both like interstellar)
+//          david (likes matrix, inception)
+
+// What might Alice like based on her genre preferences?
+query might_like(alice, X)?
+// Expected: arrival, blade_runner (scifi like her other preferences)
+
+// Director-based recommendations for Bob
+query recommend_by_director(bob, X)?
+// Expected: dark_knight (Bob likes inception, both directed by Nolan)
+
+// Multi-variable: See all user-item preference pairs (API only)
+// Python API: Query(predicate="likes", args=[None, None])
+// Returns ALL 16 like relationships in one query
+
+// Multi-variable: All sci-fi movies (API only)
+// Python API: Query(predicate="genre", args=[None, "scifi"])
+// Returns: (inception, scifi), (matrix, scifi), ...
+
+// Complex: Who likes movies directed by Villeneuve?
+// This requires joining likes + directed_by
+// Not directly queryable, but can be derived via rules
+
+// ============================================================================
+// ADVANCED: Combining signals
+// ============================================================================
+
+// Hybrid recommendation: Combines collaborative + content-based
+rule strong_recommendation(User, Item) :-
+    similar_taste(User, SimilarUser),
+    likes(SimilarUser, Item),
+    not likes(User, Item).  // Don't recommend what they already like
+
+query strong_recommendation(alice, X)?
+// Expected: Items liked by users with similar taste
+//          e.g., dark_knight (liked by bob and david who share taste with alice)
+
+// ============================================================================
+// SCALABILITY INSIGHTS
+// ============================================================================
+
+// This example demonstrates:
+//
+// 1. **Approximate matching benefits:**
+//    - In real systems, user IDs/item IDs might be fuzzy (typos, variants)
+//    - VSAR's similarity-based retrieval handles this gracefully
+//    - Traditional SQL would fail on exact match misses
+//
+// 2. **Multi-variable queries:**
+//    - likes(?, ?) returns all preferences in one retrieval
+//    - Enables efficient exploration of the preference graph
+//    - 100% accuracy via successive interference cancellation
+//
+// 3. **Rule-based composition:**
+//    - Easy to combine signals (collaborative + content + director)
+//    - Rules express domain knowledge declaratively
+//    - Forward chaining derives all recommendations upfront
+//
+// 4. **Performance characteristics:**
+//    - Query time: O(d) with ANN indexing (constant w.r.t. fact count)
+//    - Scales to millions of user-item pairs
+//    - Graceful degradation under noise
+//
+// 5. **Integration with neural systems:**
+//    - Entity vectors could be learned embeddings from user behavior
+//    - Zero-shot reasoning over extracted preferences
+//    - No retraining needed when adding new rules
+
+// ============================================================================
+// FUTURE ENHANCEMENTS (Multi-mode reasoning)
+// ============================================================================
+
+// With additional reasoning modes, we could:
+//
+// - **Abduction:** Explain why a recommendation was made
+//   "Why recommend Arrival to Alice?" →
+//   "Because Alice likes Interstellar (scifi), and Arrival is scifi"
+//
+// - **Analogical:** Transfer preferences from one domain to another
+//   "Alice likes Dune and scifi movies" →
+//   "Recommend scifi books similar to Dune (e.g., Foundation)"
+//
+// - **Probabilistic:** Score recommendations with confidence
+//   "Alice will like Arrival with 85% confidence"
+//
+// - **Case-based:** Find users with similar profiles
+//   "Users most similar to Alice: bob (90%), charlie (75%)"
