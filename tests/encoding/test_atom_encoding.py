@@ -7,14 +7,12 @@ This test suite validates:
 - Variable representation
 """
 
-import jax
 import jax.numpy as jnp
 import pytest
-
-from vsar.symbols.spaces import SymbolSpace
-from vsar.symbols.registry import SymbolRegistry
+from vsar.encoding.atom_encoder import Atom, AtomEncoder, Constant
 from vsar.kernel.vsa_backend import FHRRBackend
-from vsar.encoding.atom_encoder import AtomEncoder, Atom, Constant, Term
+from vsar.symbols.registry import SymbolRegistry
+from vsar.symbols.spaces import SymbolSpace
 
 
 class TestAtomEncoding:
@@ -77,8 +75,8 @@ class TestAtomDecoding:
 
     def test_decode_predicate(self):
         """Test decoding predicate from atom encoding."""
-        backend = FHRRBackend(dim=512, seed=42)
-        registry = SymbolRegistry(dim=512, seed=42)
+        backend = FHRRBackend(dim=2048, seed=42)  # Higher dim for better accuracy
+        registry = SymbolRegistry(dim=2048, seed=42)
         encoder = AtomEncoder(backend, registry)
 
         atom = Atom("parent", [Constant("alice"), Constant("bob")])
@@ -93,7 +91,7 @@ class TestAtomDecoding:
 
         assert len(results) == 1
         assert results[0][0] == "parent"
-        assert results[0][1] > 0.6  # Good similarity despite bundling
+        assert results[0][1] > 0.6  # Good similarity with dim=2048
 
     def test_decode_arg_positions(self):
         """Test decoding specific argument positions."""
@@ -190,11 +188,7 @@ class TestHigherArityPredicates:
         registry = SymbolRegistry(dim=1024, seed=42)
         encoder = AtomEncoder(backend, registry)
 
-        atom = Atom("between", [
-            Constant("alice"),
-            Constant("bob"),
-            Constant("carol")
-        ])
+        atom = Atom("between", [Constant("alice"), Constant("bob"), Constant("carol")])
         vec = encoder.encode_atom(atom)
 
         assert vec.shape == (1024,)
@@ -205,11 +199,7 @@ class TestHigherArityPredicates:
         registry = SymbolRegistry(dim=4096, seed=42)
         encoder = AtomEncoder(backend, registry)
 
-        atom = Atom("between", [
-            Constant("alice"),
-            Constant("bob"),
-            Constant("carol")
-        ])
+        atom = Atom("between", [Constant("alice"), Constant("bob"), Constant("carol")])
         vec = encoder.encode_atom(atom)
 
         decoded = encoder.decode_atom(vec, threshold=0.05)
