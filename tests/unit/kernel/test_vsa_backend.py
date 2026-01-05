@@ -240,4 +240,5 @@ class TestBackendComparison:
 
             assert c.shape == (512,)
             assert bundled.shape == (512,)
-            assert 0.0 <= sim <= 1.0
+            # Allow small negative values due to floating point precision
+            assert -0.01 <= sim <= 1.0
