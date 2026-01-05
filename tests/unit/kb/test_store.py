@@ -3,7 +3,6 @@
 import jax
 import jax.numpy as jnp
 import pytest
-
 from vsar.kb.store import KnowledgeBase
 from vsar.kernel.vsa_backend import FHRRBackend
 
@@ -30,7 +29,7 @@ class TestKnowledgeBase:
 
     def test_insert_single_fact(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test inserting a single fact."""
-        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
         kb.insert("parent", vec, ("alice", "bob"))
 
         assert kb.count() == 1
@@ -41,8 +40,8 @@ class TestKnowledgeBase:
         self, kb: KnowledgeBase, backend: FHRRBackend
     ) -> None:
         """Test inserting multiple facts for same predicate."""
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
         kb.insert("parent", vec2, ("bob", "carol"))
@@ -52,8 +51,8 @@ class TestKnowledgeBase:
 
     def test_insert_multiple_predicates(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test inserting facts for different predicates."""
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
         kb.insert("sibling", vec2, ("bob", "carol"))
@@ -65,7 +64,7 @@ class TestKnowledgeBase:
 
     def test_get_vectors_existing_predicate(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test getting vectors for existing predicate."""
-        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
         kb.insert("parent", vec, ("alice", "bob"))
 
         vectors = kb.get_vectors("parent")
@@ -79,8 +78,8 @@ class TestKnowledgeBase:
 
     def test_get_vectors_accumulates(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test that vectors list accumulates multiple atoms."""
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
         vectors1 = kb.get_vectors("parent")
@@ -96,8 +95,8 @@ class TestKnowledgeBase:
 
     def test_get_facts_existing_predicate(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test getting facts for existing predicate."""
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
         kb.insert("parent", vec2, ("bob", "carol"))
@@ -114,9 +113,9 @@ class TestKnowledgeBase:
 
     def test_predicates_list(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test getting list of all predicates."""
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec3 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec3 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
         kb.insert("sibling", vec2, ("bob", "carol"))
@@ -130,9 +129,9 @@ class TestKnowledgeBase:
 
     def test_count_all_facts(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test counting all facts across predicates."""
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec3 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec3 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
         kb.insert("parent", vec2, ("bob", "carol"))
@@ -149,7 +148,7 @@ class TestKnowledgeBase:
 
     def test_has_predicate_true(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test has_predicate returns True for existing predicate."""
-        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
         kb.insert("parent", vec, ("alice", "bob"))
 
         assert kb.has_predicate("parent")
@@ -160,8 +159,8 @@ class TestKnowledgeBase:
 
     def test_clear(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test clearing all facts from KB."""
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
         kb.insert("sibling", vec2, ("bob", "carol"))
@@ -174,8 +173,8 @@ class TestKnowledgeBase:
 
     def test_clear_predicate(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test clearing facts for specific predicate."""
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
         kb.insert("sibling", vec2, ("bob", "carol"))
@@ -193,9 +192,9 @@ class TestKnowledgeBase:
 
     def test_facts_preserve_order(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test that facts are stored in insertion order."""
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec3 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec3 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
         kb.insert("parent", vec2, ("bob", "carol"))
@@ -208,9 +207,9 @@ class TestKnowledgeBase:
 
     def test_different_arity_facts(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test storing facts with different arities."""
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec3 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec3 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
 
         kb.insert("human", vec1, ("alice",))
         kb.insert("parent", vec2, ("alice", "bob"))
@@ -223,7 +222,7 @@ class TestKnowledgeBase:
     def test_contains_similar_identical_fact(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test contains_similar returns True for identical fact."""
         # Generate a vector
-        vec = backend.generate_random(jax.random.PRNGKey(42), (backend.dimensionension,))
+        vec = backend.generate_random(jax.random.PRNGKey(42), (backend.dimension,))
 
         # Insert fact
         kb.insert("parent", vec, ("alice", "bob"))
@@ -231,11 +230,13 @@ class TestKnowledgeBase:
         # Check if same vector is considered similar
         assert kb.contains_similar("parent", vec, threshold=0.95)
 
-    def test_contains_similar_very_similar_fact(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
+    def test_contains_similar_very_similar_fact(
+        self, kb: KnowledgeBase, backend: FHRRBackend
+    ) -> None:
         """Test contains_similar returns True for very similar fact."""
         # Generate two vectors from same seed (will be identical)
-        vec1 = backend.generate_random(jax.random.PRNGKey(42), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(42), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(42), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(42), (backend.dimension,))
 
         # Insert first fact
         kb.insert("parent", vec1, ("alice", "bob"))
@@ -246,8 +247,8 @@ class TestKnowledgeBase:
     def test_contains_similar_novel_fact(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test contains_similar returns False for novel fact."""
         # Generate two different vectors
-        vec1 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(2), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(2), (backend.dimension,))
 
         # Insert first fact
         kb.insert("parent", vec1, ("alice", "bob"))
@@ -260,17 +261,21 @@ class TestKnowledgeBase:
         # This assertion may occasionally fail due to randomness, but very unlikely
         assert not is_similar
 
-    def test_contains_similar_nonexistent_predicate(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
+    def test_contains_similar_nonexistent_predicate(
+        self, kb: KnowledgeBase, backend: FHRRBackend
+    ) -> None:
         """Test contains_similar returns False for nonexistent predicate."""
-        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
 
         # Check nonexistent predicate
         assert not kb.contains_similar("nonexistent", vec, threshold=0.95)
 
-    def test_contains_similar_empty_predicate(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
+    def test_contains_similar_empty_predicate(
+        self, kb: KnowledgeBase, backend: FHRRBackend
+    ) -> None:
         """Test contains_similar returns False when predicate has no facts."""
-        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimension,))
 
         # Insert fact then clear predicate
         kb.insert("parent", vec1, ("alice", "bob"))
@@ -279,11 +284,13 @@ class TestKnowledgeBase:
         # Should return False (no facts to compare against)
         assert not kb.contains_similar("parent", vec2, threshold=0.95)
 
-    def test_contains_similar_different_threshold(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
+    def test_contains_similar_different_threshold(
+        self, kb: KnowledgeBase, backend: FHRRBackend
+    ) -> None:
         """Test contains_similar with different threshold values."""
         # Generate two somewhat similar vectors (same seed + slight variation)
-        vec1 = backend.generate_random(jax.random.PRNGKey(42), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(43), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(42), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(43), (backend.dimension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
 
@@ -297,9 +304,9 @@ class TestKnowledgeBase:
     def test_contains_similar_multiple_facts(self, kb: KnowledgeBase, backend: FHRRBackend) -> None:
         """Test contains_similar checks against all facts in predicate."""
         # Insert multiple facts
-        vec1 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimensionension,))
-        vec2 = backend.generate_random(jax.random.PRNGKey(2), (backend.dimensionension,))
-        vec3 = backend.generate_random(jax.random.PRNGKey(3), (backend.dimensionension,))
+        vec1 = backend.generate_random(jax.random.PRNGKey(1), (backend.dimension,))
+        vec2 = backend.generate_random(jax.random.PRNGKey(2), (backend.dimension,))
+        vec3 = backend.generate_random(jax.random.PRNGKey(3), (backend.dimension,))
 
         kb.insert("parent", vec1, ("alice", "bob"))
         kb.insert("parent", vec2, ("bob", "carol"))
