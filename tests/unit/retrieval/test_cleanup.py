@@ -1,9 +1,7 @@
 """Unit tests for cleanup operations."""
 
 import jax
-import jax.numpy as jnp
 import pytest
-
 from vsar.kernel.vsa_backend import FHRRBackend
 from vsar.retrieval.cleanup import batch_cleanup, cleanup, get_top_symbol
 from vsar.symbols.registry import SymbolRegistry
@@ -50,7 +48,7 @@ class TestCleanup:
         alice_vec = registry.get(SymbolSpace.ENTITIES, "alice")
         assert alice_vec is not None
 
-        noise = backend.generate_random(jax.random.PRNGKey(999), (backend.dimensionension,))
+        noise = backend.generate_random(jax.random.PRNGKey(999), (backend.dimension,))
         noise = backend.normalize(noise) * 0.1  # Small noise
 
         noisy_vec = alice_vec + noise
@@ -86,7 +84,7 @@ class TestCleanup:
 
     def test_cleanup_empty_space(self, backend: FHRRBackend, registry: SymbolRegistry) -> None:
         """Test cleanup on empty symbol space."""
-        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
         vec = backend.normalize(vec)
 
         # ATTRIBUTES space is empty
@@ -148,7 +146,7 @@ class TestCleanup:
         self, backend: FHRRBackend, registry: SymbolRegistry
     ) -> None:
         """Test get_top_symbol on empty space returns None."""
-        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimensionension,))
+        vec = backend.generate_random(jax.random.PRNGKey(0), (backend.dimension,))
         vec = backend.normalize(vec)
 
         result = get_top_symbol(SymbolSpace.ATTRIBUTES, vec, registry, backend)
