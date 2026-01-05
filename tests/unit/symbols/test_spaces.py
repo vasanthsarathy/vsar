@@ -1,6 +1,5 @@
 """Unit tests for symbol spaces."""
 
-pytestmark = pytest.mark.xfail(reason="SymbolSpace enum refactored to 11 spaces")
 
 import pytest
 
