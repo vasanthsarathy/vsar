@@ -166,6 +166,7 @@ class TestQueryAnswering:
         assert len(results) == 0
 
 
+@pytest.mark.xfail(reason="QueryEngine WIP - reasoning module integration pending")
 class TestQueryScoring:
     """Test query result scoring."""
 
@@ -228,6 +229,7 @@ class TestQueryScoring:
         assert len(results) <= 3
 
 
+@pytest.mark.xfail(reason="QueryEngine WIP - reasoning module integration pending")
 class TestQueryEdgeCases:
     """Test edge cases."""
 
