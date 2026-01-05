@@ -3,7 +3,6 @@
 import jax
 import jax.numpy as jnp
 import pytest
-
 from vsar.kernel.vsa_backend import FHRRBackend, MAPBackend
 
 
@@ -22,7 +21,7 @@ class TestFHRRBackend:
 
     def test_initialization(self, backend: FHRRBackend) -> None:
         """Test backend initialization."""
-        assert backend.dimensionension == 512
+        assert backend.dimension == 512
 
     def test_generate_random(self, backend: FHRRBackend, key: jax.random.PRNGKey) -> None:
         """Test random vector generation."""
@@ -129,7 +128,7 @@ class TestMAPBackend:
 
     def test_initialization(self, backend: MAPBackend) -> None:
         """Test backend initialization."""
-        assert backend.dimensionension == 512
+        assert backend.dimension == 512
 
     def test_generate_random(self, backend: MAPBackend, key: jax.random.PRNGKey) -> None:
         """Test random vector generation."""
